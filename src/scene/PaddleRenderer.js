@@ -4,6 +4,8 @@ import { CONFIG } from '../config.js';
 export class PaddleRenderer {
   constructor(scene) {
     this.scene = scene;
+    this.playerFlash = 0;
+    this.aiFlash = 0;
 
     // Player paddle (cyan)
     this.playerMesh = this.createPaddleMesh(CONFIG.colors.playerPaddle);
@@ -31,7 +33,15 @@ export class PaddleRenderer {
     return mesh;
   }
 
-  update(playerPaddle, aiPaddle) {
+  flashPlayer() {
+    this.playerFlash = 1.0;
+  }
+
+  flashAI() {
+    this.aiFlash = 1.0;
+  }
+
+  update(playerPaddle, aiPaddle, dt) {
     this.playerMesh.position.set(
       playerPaddle.x,
       CONFIG.paddle.height / 2,
@@ -42,5 +52,15 @@ export class PaddleRenderer {
       CONFIG.paddle.height / 2,
       aiPaddle.z
     );
+
+    // Flash decay
+    if (this.playerFlash > 0) {
+      this.playerFlash = Math.max(0, this.playerFlash - dt * 10);
+      this.playerMesh.material.emissiveIntensity = 0.4 + this.playerFlash * 0.8;
+    }
+    if (this.aiFlash > 0) {
+      this.aiFlash = Math.max(0, this.aiFlash - dt * 10);
+      this.aiMesh.material.emissiveIntensity = 0.4 + this.aiFlash * 0.8;
+    }
   }
 }

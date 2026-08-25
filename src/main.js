@@ -43,20 +43,28 @@ function gameLoop(time) {
         const speed = game.ball.currentSpeed;
         audio.playPaddleHit(speed);
         const color = evt.who === 'player' ? CONFIG.colors.playerPaddle : CONFIG.colors.opponentPaddle;
-        // Scale particles with combo
         const combo = evt.combo || 1;
         const particleCount = CONFIG.effects.hitParticles + Math.min(combo * 2, 20);
         const shakeMag = CONFIG.effects.hitShake + Math.min(combo * 0.1, 1);
         effects.spawnParticles(evt.x, 0.5, evt.z, color, particleCount, 3 + Math.min(combo * 0.2, 2));
         effects.triggerShake(shakeMag, CONFIG.effects.hitShakeDuration);
+        // Paddle flash
+        if (evt.who === 'player') paddleRenderer.flashPlayer();
+        else paddleRenderer.flashAI();
+        // Combo milestones: 5, 10, 15, 20
+        if (combo % 5 === 0 && combo > 0) {
+          effects.spawnComboRing(evt.x, 0.5, evt.z, combo);
+          audio.playComboMilestone(combo);
+        }
         break;
       }
       case 'score': {
         const isPlayer = evt.who === 'player';
         audio.playScore(isPlayer);
         const color = isPlayer ? CONFIG.colors.playerPaddle : CONFIG.colors.opponentPaddle;
-        effects.spawnParticles(evt.x, 1, evt.z, color, CONFIG.effects.scoreParticles, 4);
-        effects.triggerShake(CONFIG.effects.scoreShake, CONFIG.effects.scoreShakeDuration);
+        effects.spawnParticles(evt.x, 1, evt.z, color, CONFIG.effects.scoreParticles * 2, 5);
+        effects.triggerShake(CONFIG.effects.scoreShake * 1.5, CONFIG.effects.scoreShakeDuration);
+        effects.triggerScreenFlash(isPlayer ? color : 0xff0044, 0.3);
         break;
       }
     }
