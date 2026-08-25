@@ -11,7 +11,7 @@ export class PlayerPaddle extends Paddle {
 
   setMouseTarget(clientX, canvasWidth) {
     const mouseX = (clientX / canvasWidth) * 2 - 1;
-    this.targetX = mouseX * (CONFIG.court.width / 2);
+    this.targetX = -mouseX * (CONFIG.court.width / 2);
   }
 
   setKey(key, pressed) {
@@ -30,8 +30,8 @@ export class PlayerPaddle extends Paddle {
       const diff = this.targetX - this.x;
       this.x += diff * Math.min(1, dt * 15);
     } else {
-      if (this.keys.left) this.x -= this.moveSpeed * dt;
-      if (this.keys.right) this.x += this.moveSpeed * dt;
+      if (this.keys.left) this.x += this.moveSpeed * dt;
+      if (this.keys.right) this.x -= this.moveSpeed * dt;
     }
     this.clampToCourt();
   }
