@@ -1,0 +1,42 @@
+const STORAGE_KEY = 'pong3d_settings';
+
+const DEFAULTS = {
+  difficulty: 'medium',
+  winScore: 11,
+  deuce: true,
+};
+
+export class Settings {
+  constructor() {
+    this.data = { ...DEFAULTS };
+    this.load();
+  }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        this.data = { ...DEFAULTS, ...parsed };
+      }
+    } catch (e) {
+      this.data = { ...DEFAULTS };
+    }
+  }
+
+  save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+    } catch (e) {
+      // localStorage not available
+    }
+  }
+
+  get(key) {
+    return this.data[key] !== undefined ? this.data[key] : DEFAULTS[key];
+  }
+
+  set(key, value) {
+    this.data[key] = value;
+  }
+}

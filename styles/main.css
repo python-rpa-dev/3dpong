@@ -1,0 +1,165 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  overflow: hidden;
+  background: #0a0a1a;
+  font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+  color: #fff;
+}
+
+#game-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#ui-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#ui-overlay .screen,
+#ui-overlay button,
+#ui-overlay select {
+  pointer-events: auto;
+}
+
+/* Score */
+#score-display {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.4);
+  background: rgba(10,10,26,0.5);
+  padding: 8px 32px;
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+}
+
+#player-score { color: #00e5ff; text-shadow: 0 0 15px #00e5ff; }
+#opponent-score { color: #ff2d95; text-shadow: 0 0 15px #ff2d95; }
+#score-separator { color: #555; margin: 0 8px; }
+
+/* Screens */
+.screen {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  background: rgba(10,10,26,0.85);
+  padding: 48px 64px;
+  border-radius: 20px;
+  border: 1px solid rgba(0,229,255,0.15);
+  backdrop-filter: blur(10px);
+  min-width: 340px;
+}
+
+.screen h1 {
+  font-size: 64px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  background: linear-gradient(135deg, #00e5ff, #ff2d95);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.screen h2 {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  margin-bottom: 24px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.3);
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #888;
+  margin-bottom: 32px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.final-score {
+  font-size: 32px;
+  color: #aaa;
+  margin-bottom: 28px;
+  letter-spacing: 4px;
+}
+
+/* Buttons */
+.neon-btn {
+  display: block;
+  width: 220px;
+  margin: 12px auto;
+  padding: 14px 0;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #fff;
+  background: transparent;
+  border: 2px solid #00e5ff;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+.neon-btn:hover {
+  background: rgba(0,229,255,0.15);
+  box-shadow: 0 0 24px rgba(0,229,255,0.4), inset 0 0 12px rgba(0,229,255,0.1);
+  transform: translateY(-1px);
+}
+
+.neon-btn:active {
+  transform: translateY(0);
+}
+
+/* Settings */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+  gap: 16px;
+}
+
+.setting-row label {
+  font-size: 15px;
+  color: #aaa;
+  letter-spacing: 1px;
+}
+
+.setting-row select {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.setting-row select:focus {
+  border-color: #00e5ff;
+}
+
+.setting-row select option {
+  background: #1a1a3e;
+}
+
+/* Utility */
+.hidden { display: none !important; }

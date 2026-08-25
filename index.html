@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PONG 3D</title>
+  <link rel="stylesheet" href="/styles/main.css">
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+  <div id="ui-overlay">
+    <div id="score-display" class="hidden">
+      <span id="player-score">0</span>
+      <span id="score-separator">:</span>
+      <span id="opponent-score">0</span>
+    </div>
+
+    <div id="menu-screen" class="screen">
+      <h1>PONG 3D</h1>
+      <p class="subtitle">Isometric Neon Pong</p>
+      <button id="btn-play" class="neon-btn">PLAY</button>
+      <button id="btn-settings" class="neon-btn">SETTINGS</button>
+    </div>
+
+    <div id="pause-screen" class="screen hidden">
+      <h2>PAUSED</h2>
+      <button id="btn-resume" class="neon-btn">RESUME</button>
+      <button id="btn-quit" class="neon-btn">QUIT</button>
+    </div>
+
+    <div id="gameover-screen" class="screen hidden">
+      <h2 id="gameover-text">YOU WIN!</h2>
+      <p id="final-score" class="final-score">11 : 5</p>
+      <button id="btn-again" class="neon-btn">PLAY AGAIN</button>
+      <button id="btn-menu" class="neon-btn">MENU</button>
+    </div>
+
+    <div id="settings-screen" class="screen hidden">
+      <h2>SETTINGS</h2>
+      <div class="setting-row">
+        <label>Difficulty</label>
+        <select id="setting-difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>Win Score</label>
+        <select id="setting-winscore">
+          <option value="5">5</option>
+          <option value="7">7</option>
+          <option value="11" selected>11</option>
+          <option value="15">15</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>Deuce (win by 2)</label>
+        <select id="setting-deuce">
+          <option value="true" selected>On</option>
+          <option value="false">Off</option>
+        </select>
+      </div>
+      <button id="btn-save-settings" class="neon-btn">SAVE</button>
+      <button id="btn-back" class="neon-btn">BACK</button>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
