@@ -22,6 +22,10 @@ export class UI {
     document.getElementById('setting-winscore').value = String(settings.get('winScore'));
     document.getElementById('setting-deuce').value = String(settings.get('deuce'));
     document.getElementById('setting-gamemode').value = settings.get('gameMode');
+    document.getElementById('setting-powerups').checked = settings.get('powerups');
+    document.getElementById('setting-multiball').checked = settings.get('multiBall');
+    document.getElementById('setting-paddleshifts').checked = settings.get('paddleShifts');
+    this.updateFunSettingsVisibility();
 
     // Button handlers
     document.getElementById('btn-play').addEventListener('click', () => this.startGame());
@@ -32,6 +36,7 @@ export class UI {
     document.getElementById('btn-menu').addEventListener('click', () => this.quitToMenu());
     document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
     document.getElementById('btn-back').addEventListener('click', () => this.showMenu());
+    document.getElementById('setting-gamemode').addEventListener('change', () => this.updateFunSettingsVisibility());
 
     // Keyboard
     window.addEventListener('keydown', (e) => this.onKeyDown(e));
@@ -76,17 +81,33 @@ export class UI {
 
   saveSettings() {
     const difficulty = document.getElementById('setting-difficulty').value;
-    const winScore = parseInt(document.getElementById('setting-winscore').value, 10);
+    const winScore = parseInt(document.getElementById('setting-winscore').value);
     const deuce = document.getElementById('setting-deuce').value === 'true';
     const gameMode = document.getElementById('setting-gamemode').value;
+    const powerups = document.getElementById('setting-powerups').checked;
+    const multiBall = document.getElementById('setting-multiball').checked;
+    const paddleShifts = document.getElementById('setting-paddleshifts').checked;
 
     this.settings.set('difficulty', difficulty);
     this.settings.set('winScore', winScore);
     this.settings.set('deuce', deuce);
     this.settings.set('gameMode', gameMode);
+    this.settings.set('powerups', powerups);
+    this.settings.set('multiBall', multiBall);
+    this.settings.set('paddleShifts', paddleShifts);
     this.settings.save();
 
     this.showMenu();
+  }
+
+  updateFunSettingsVisibility() {
+    const gameMode = document.getElementById('setting-gamemode').value;
+    const funSettings = document.getElementById('fun-settings');
+    if (gameMode === 'fun') {
+      funSettings.classList.remove('hidden');
+    } else {
+      funSettings.classList.add('hidden');
+    }
   }
 
   hideAllScreens() {

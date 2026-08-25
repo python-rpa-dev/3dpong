@@ -5,6 +5,9 @@ const DEFAULTS = {
   winScore: 11,
   deuce: true,
   gameMode: 'fun',
+  powerups: true,
+  multiBall: true,
+  paddleShifts: true,
 };
 
 export class Settings {
