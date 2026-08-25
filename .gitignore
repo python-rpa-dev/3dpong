@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Vite / esbuild
+.vite/
+.esbuild/
+
+# Logs
+*.log
+npm-debug.log*
+debug.log
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Ephemeral / temp
+*.tmp
+*.bak
+*.old
+temp/
+tmp/
+*.pid
+*.lock.tmp
+
+# Helper libraries (downloaded, not source)
+libs/
+vendor/
+third_party/
+
+# Single-file build artifacts (keep dist/ ignored, the final pong3d.html is committed to main at milestones)
+!dist/pong3d.html
