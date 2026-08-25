@@ -4,6 +4,7 @@ const DEFAULTS = {
   difficulty: 'medium',
   winScore: 11,
   deuce: true,
+  gameMode: 'fun',
 };
 
 export class Settings {

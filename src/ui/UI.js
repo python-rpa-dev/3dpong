@@ -8,6 +8,8 @@ export class UI {
     this.playerScoreEl = document.getElementById('player-score');
     this.opponentScoreEl = document.getElementById('opponent-score');
     this.scoreDisplay = document.getElementById('score-display');
+    this.comboDisplay = document.getElementById('combo-display');
+    this.comboCountEl = document.getElementById('combo-count');
     this.menuScreen = document.getElementById('menu-screen');
     this.pauseScreen = document.getElementById('pause-screen');
     this.gameoverScreen = document.getElementById('gameover-screen');
@@ -19,6 +21,7 @@ export class UI {
     document.getElementById('setting-difficulty').value = settings.get('difficulty');
     document.getElementById('setting-winscore').value = String(settings.get('winScore'));
     document.getElementById('setting-deuce').value = String(settings.get('deuce'));
+    document.getElementById('setting-gamemode').value = settings.get('gameMode');
 
     // Button handlers
     document.getElementById('btn-play').addEventListener('click', () => this.startGame());
@@ -75,10 +78,12 @@ export class UI {
     const difficulty = document.getElementById('setting-difficulty').value;
     const winScore = parseInt(document.getElementById('setting-winscore').value, 10);
     const deuce = document.getElementById('setting-deuce').value === 'true';
+    const gameMode = document.getElementById('setting-gamemode').value;
 
     this.settings.set('difficulty', difficulty);
     this.settings.set('winScore', winScore);
     this.settings.set('deuce', deuce);
+    this.settings.set('gameMode', gameMode);
     this.settings.save();
 
     this.showMenu();
@@ -89,6 +94,7 @@ export class UI {
     this.pauseScreen.classList.add('hidden');
     this.gameoverScreen.classList.add('hidden');
     this.settingsScreen.classList.add('hidden');
+    this.comboDisplay.classList.add('hidden');
   }
 
   update() {
@@ -96,10 +102,22 @@ export class UI {
 
     // Only react to state changes, not every frame
     if (state === this.prevState) {
-      // Still update score text during gameplay
+      // Still update score + combo text during gameplay
       if (state === 'PLAYING' || state === 'SERVE' || state === 'SCORED') {
         this.playerScoreEl.textContent = this.game.score.playerScore;
         this.opponentScoreEl.textContent = this.game.score.opponentScore;
+
+        // Combo display (fun mode only)
+        if (this.game.isFunMode() && this.game.rallyCombo > 1) {
+          this.comboDisplay.classList.remove('hidden');
+          this.comboCountEl.textContent = this.game.rallyCombo;
+          // Color shifts with combo
+          const colors = [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95];
+          const idx = Math.min(Math.floor(this.game.rallyCombo / 3), colors.length - 1);
+          this.comboCountEl.style.color = '#' + colors[idx].toString(16).padStart(6, '0');
+        } else {
+          this.comboDisplay.classList.add('hidden');
+        }
       }
       return;
     }

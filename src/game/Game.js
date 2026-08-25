@@ -1,44 +1,50 @@
-import { CONFIG } from '../config.js';
 import { Ball } from './Ball.js';
 import { PlayerPaddle } from './PlayerPaddle.js';
 import { AIPaddle } from './AIPaddle.js';
-import { Court } from './Court.js';
 import { Score } from './Score.js';
+import { Court } from './Court.js';
+import { CONFIG } from '../config.js';
 
 const STATES = {
-  MENU: 'MENU',
+  READY: 'READY',
   SERVE: 'SERVE',
   PLAYING: 'PLAYING',
-  PAUSED: 'PAUSED',
   SCORED: 'SCORED',
   GAME_OVER: 'GAME_OVER',
+  PAUSED: 'PAUSED',
+  MENU: 'MENU',
 };
 
 export class Game {
   constructor(settings) {
-    this.state = STATES.MENU;
+    this.settings = settings;
     this.ball = new Ball();
     this.playerPaddle = new PlayerPaddle();
-    this.aiPaddle = new AIPaddle();
+    this.aiPaddle = new AIPaddle(settings.get('difficulty'));
+    this.score = new Score(settings.get('winScore'));
     this.court = new Court();
-    this.winScore = parseInt(settings.get('winScore', '11'));
-    this.deuce = settings.get('deuce', 'true') === 'true';
-    this.score = new Score(this.winScore, this.deuce);
-    this.aiDifficulty = settings.get('difficulty', 'medium');
-    this.aiPaddle.setDifficulty(this.aiDifficulty);
-
+    this.state = STATES.READY;
     this.serveTimer = 0;
     this.scoreTimer = 0;
     this.serveDirection = 1;
-    this.scoreEvent = null;
     this.events = [];
+    this.rallyCombo = 0;
+    this.maxRallyCombo = 0;
+    this._gameOverSoundPlayed = false;
+  }
+
+  isFunMode() {
+    return this.settings.get('gameMode') === 'fun';
   }
 
   start() {
     this.score.reset();
+    this.ball.active = false;
+    this.rallyCombo = 0;
+    this.maxRallyCombo = 0;
+    this.serveDirection = Math.random() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
-    this.serveDirection = Math.random() > 0.5 ? 1 : -1;
     this.events.length = 0;
   }
 
@@ -84,8 +90,10 @@ export class Game {
             this.state = STATES.GAME_OVER;
             this.winner = winner;
           } else {
+            this.ball.reset(this.serveDirection);
+            this.rallyCombo = 0;
             this.state = STATES.SERVE;
-            this.serveTimer = CONFIG.serve.scoreDelay;
+            this.serveTimer = CONFIG.serve.delay;
           }
         }
         break;
@@ -93,21 +101,29 @@ export class Game {
   }
 
   handleCollisions() {
+    const fun = this.isFunMode();
+
     // Wall bounces
     if (this.court.checkWallBounce(this.ball)) {
       this.events.push({ type: 'wallBounce', x: this.ball.x, z: this.ball.z });
     }
 
     // Player paddle bounce
-    if (this.court.checkPaddleBounce(this.ball, this.playerPaddle)) {
-      this.ball.increaseSpeed();
-      this.events.push({ type: 'paddleHit', x: this.ball.x, z: this.ball.z, who: 'player' });
+    const playerHit = this.court.checkPaddleBounce(this.ball, this.playerPaddle, fun);
+    if (playerHit) {
+      if (!fun) this.ball.increaseSpeed();
+      this.rallyCombo++;
+      this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
+      this.events.push({ type: 'paddleHit', x: this.ball.x, z: this.ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
     }
 
     // AI paddle bounce
-    if (this.court.checkPaddleBounce(this.ball, this.aiPaddle)) {
-      this.ball.increaseSpeed();
-      this.events.push({ type: 'paddleHit', x: this.ball.x, z: this.ball.z, who: 'ai' });
+    const aiHit = this.court.checkPaddleBounce(this.ball, this.aiPaddle, fun);
+    if (aiHit) {
+      if (!fun) this.ball.increaseSpeed();
+      this.rallyCombo++;
+      this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
+      this.events.push({ type: 'paddleHit', x: this.ball.x, z: this.ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
     }
 
     // Score
@@ -117,7 +133,7 @@ export class Game {
       this.state = STATES.SCORED;
       this.scoreTimer = CONFIG.serve.scoreDelay;
       this.serveDirection = scorer === 'player' ? 1 : -1;
-      this.events.push({ type: 'score', who: scorer, x: this.ball.x, z: this.ball.z });
+      this.events.push({ type: 'score', who: scorer, x: this.ball.x, z: this.ball.z, combo: this.rallyCombo });
     }
   }
 

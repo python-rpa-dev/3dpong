@@ -14,6 +14,10 @@
       <span id="score-separator">:</span>
       <span id="opponent-score">0</span>
     </div>
+    <div id="combo-display" class="hidden">
+      <span id="combo-count">0</span>
+      <span id="combo-label">RALLY</span>
+    </div>
 
     <div id="menu-screen" class="screen">
       <h1>PONG 3D</h1>
@@ -52,6 +56,13 @@
           <option value="7">7</option>
           <option value="11" selected>11</option>
           <option value="15">15</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>Game Mode</label>
+        <select id="setting-gamemode">
+          <option value="classic">Classic (Dull)</option>
+          <option value="fun" selected>Fun (Spin + Speed + Combo)</option>
         </select>
       </div>
       <div class="setting-row">
