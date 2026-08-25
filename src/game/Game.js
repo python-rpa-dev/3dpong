@@ -77,7 +77,7 @@ export class Game {
 
       case STATES.PLAYING:
         this.playerPaddle.update(dt);
-        this.aiPaddle.update(dt, this.ball);
+        this.aiPaddle.update(dt, this.ball, this.rallyCombo);
         this.ball.update(dt);
         this.handleCollisions();
         break;
