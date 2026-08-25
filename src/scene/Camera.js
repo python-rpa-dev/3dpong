@@ -3,32 +3,31 @@ import { CONFIG } from '../config.js';
 
 export class Camera {
   constructor() {
+    const { fov, near, far, position, lookAt } = CONFIG.camera;
     this.camera = new THREE.PerspectiveCamera(
-      CONFIG.camera.fov,
+      fov,
       window.innerWidth / window.innerHeight,
-      0.1,
-      100
+      near,
+      far
     );
-    const p = CONFIG.camera.position;
-    const l = CONFIG.camera.lookAt;
-    this.camera.position.set(p.x, p.y, p.z);
-    this.camera.lookAt(l.x, l.y, l.z);
-    this.basePosition = this.camera.position.clone();
-    this.shakeOffset = new THREE.Vector3();
-
-    window.addEventListener('resize', () => this.onResize());
-  }
-
-  onResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
+    // Player's perspective: behind and above the player's paddle, looking down the court
+    this.camera.position.set(position.x, position.y, position.z);
+    this.camera.lookAt(lookAt.x, lookAt.y, lookAt.z);
+    this.basePosition = new THREE.Vector3(position.x, position.y, position.z);
+    this.baseTarget = new THREE.Vector3(lookAt.x, lookAt.y, lookAt.z);
   }
 
   applyShake(offset) {
-    this.camera.position.copy(this.basePosition).add(offset);
+    if (offset && (offset.x !== 0 || offset.y !== 0)) {
+      this.camera.position.x = this.basePosition.x + offset.x;
+      this.camera.position.y = this.basePosition.y + offset.y;
+      this.camera.position.z = this.basePosition.z;
+    } else {
+      this.camera.position.copy(this.basePosition);
+    }
   }
 
-  resetShake() {
-    this.camera.position.copy(this.basePosition);
+  update() {
+    // Reserved for future camera animation
   }
 }

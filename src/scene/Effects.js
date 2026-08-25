@@ -66,6 +66,22 @@ export class Effects {
     }
   }
 
+  spawnParticles(x, y, z, color, count, speed) {
+    for (let i = 0; i < count; i++) {
+      const p = this.findParticle();
+      if (!p) break;
+      p.mesh.position.set(x, y, z);
+      p.vx = (Math.random() - 0.5) * speed * 2;
+      p.vy = Math.random() * speed + 1;
+      p.vz = (Math.random() - 0.5) * speed * 2;
+      p.life = 0.4;
+      p.maxLife = 0.4;
+      p.mesh.material.color.setHex(color);
+      p.mesh.material.opacity = 1;
+      p.mesh.visible = true;
+    }
+  }
+
   triggerShake(magnitude, duration) {
     this.shakeMagnitude = magnitude;
     this.shakeDuration = duration;
