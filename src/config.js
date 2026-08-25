@@ -50,9 +50,9 @@ export const CONFIG = {
   effects: {
     hitParticles: 10,
     scoreParticles: 25,
-    hitShake: 2,
+    hitShake: 0.5,
     scoreShake: 5,
-    hitShakeDuration: 0.1,
+    hitShakeDuration: 0.08,
     scoreShakeDuration: 0.2,
   },
   serve: {
