@@ -15,18 +15,18 @@ export const CONFIG = {
   paddle: {
     width: 5,
     depth: 0.8,
-    height: 1.5,
+    height: 2.5,
     playerZ: -14,
     opponentZ: 14,
     maxBounceAngle: Math.PI / 3,
     moveSpeed: 12,
   },
   camera: {
-    fov: 50,
+    fov: 55,
     near: 0.1,
     far: 100,
-    position: { x: 0, y: 12, z: -20 },
-    lookAt: { x: 0, y: 0, z: 2 },
+    position: { x: 0, y: 22, z: -20 },
+    lookAt: { x: 0, y: 0, z: 0 },
   },
   colors: {
     background: 0x0a0a1a,
