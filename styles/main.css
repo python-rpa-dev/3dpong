@@ -161,32 +161,32 @@ body {
   background: #1a1a3e;
 }
 
-/* Combo display */
+/* Combo display - right side */
 #combo-display {
   position: absolute;
-  top: 60px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   z-index: 10;
   pointer-events: none;
 }
 
 #combo-count {
-  font-size: 32px;
+  font-size: 42px;
   font-weight: bold;
   color: #00e5ff;
-  text-shadow: 0 0 12px currentColor;
-  transition: color 0.2s;
+  text-shadow: 0 0 16px currentColor, 0 0 32px currentColor;
+  transition: color 0.15s, transform 0.1s;
 }
 
 #combo-label {
-  font-size: 11px;
+  font-size: 12px;
   color: #888;
-  letter-spacing: 3px;
+  letter-spacing: 4px;
 }
 
 /* Utility */

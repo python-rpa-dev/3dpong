@@ -54,7 +54,25 @@ export class BallRenderer {
     }
 
     this.mesh.visible = true;
-    this.light.intensity = 1;
+
+    // Color shifts with speed: yellow → orange → red → white
+    const speedRatio = Math.min(ball.currentSpeed / CONFIG.ball.maxSpeed, 1);
+    const r = 1;
+    const g = 1 - speedRatio * 0.6;
+    const b = 1 - speedRatio * 0.9;
+    const color = new THREE.Color(r, g, b);
+    this.mesh.material.color.copy(color);
+    this.mesh.material.emissive.copy(color);
+    this.mesh.material.emissiveIntensity = 0.3 + speedRatio * 0.7;
+    this.light.color.copy(color);
+    this.light.intensity = 0.8 + speedRatio * 1.2;
+
+    // Trail intensity scales with speed
+    const trailOpacity = 0.15 + speedRatio * 0.35;
+    for (let i = 0; i < this.trailLength; i++) {
+      this.trailMeshes[i].material.color.copy(color);
+      this.trailMeshes[i].material.opacity = trailOpacity * (1 - i / this.trailLength);
+    }
 
     // Update trail (distance-based)
     const dist = this.lastTrailPos
