@@ -23,7 +23,7 @@ export class Game {
     this.aiPaddle = new AIPaddle(settings.get('difficulty'));
     this.score = new Score(settings.get('winScore'));
     this.court = new Court();
-    this.state = STATES.READY;
+    this.state = STATES.MENU;
     this.serveTimer = 0;
     this.scoreTimer = 0;
     this.serveDirection = 1;
