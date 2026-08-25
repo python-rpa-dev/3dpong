@@ -25,7 +25,7 @@ export const CONFIG = {
     fov: 55,
     near: 0.1,
     far: 100,
-    position: { x: 0, y: 22, z: -20 },
+    position: { x: 14, y: 22, z: -14 },
     lookAt: { x: 0, y: 0, z: 0 },
   },
   colors: {
