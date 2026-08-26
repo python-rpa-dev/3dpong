@@ -82,7 +82,7 @@ function gameLoop(time) {
 
   // Update renderers
   ballRenderer.update(game.ball);
-  paddleRenderer.update(game.playerPaddle, game.aiPaddle);
+  paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   effects.update(dt);
 
   // Apply screen shake to camera

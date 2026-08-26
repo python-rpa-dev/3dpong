@@ -42,6 +42,7 @@ export class PaddleRenderer {
   }
 
   update(playerPaddle, aiPaddle, dt) {
+    if (!dt || dt <= 0) dt = 1 / 60;
     this.playerMesh.position.set(
       playerPaddle.x,
       CONFIG.paddle.height / 2,
