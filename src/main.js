@@ -28,7 +28,11 @@ function gameLoop(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
   lastTime = time;
 
-  game.update(dt);
+  try {
+    game.update(dt);
+  } catch (e) {
+    console.error('Game update error:', e);
+  }
 
   // Drain game events and trigger effects/sounds
   const events = game.drainEvents();

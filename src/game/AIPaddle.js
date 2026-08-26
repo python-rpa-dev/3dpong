@@ -35,28 +35,37 @@ export class AIPaddle extends Paddle {
 
       if (ball.active && ball.vz > 0) {
         // Ball moving toward AI — predict where it will be
-        const timeToReach = (this.z - ball.z) / ball.vz;
-        let predictedX = ball.x + ball.vx * timeToReach;
-
-        // Bounce prediction off walls
-        const halfWidth = CONFIG.court.width / 2;
-        while (Math.abs(predictedX) > halfWidth) {
-          if (predictedX > halfWidth) {
-            predictedX = 2 * halfWidth - predictedX;
-          } else {
-            predictedX = -2 * halfWidth - predictedX;
-          }
-        }
-
-        // Add error (grows with combo)
-        const error = (Math.random() - 0.5) * 2 * effectiveError * halfWidth;
-
-        // Panic chance on long rallies: AI moves wrong direction
-        const panicChance = Math.min(rallyCombo * 0.03, 0.25);
-        if (Math.random() < panicChance) {
-          this.targetX = -predictedX + error * 2;
+        if (Math.abs(ball.vz) < 0.01) {
+          this.targetX = 0;
         } else {
-          this.targetX = predictedX + error;
+          const timeToReach = (this.z - ball.z) / ball.vz;
+          let predictedX = ball.x + ball.vx * timeToReach;
+
+          // Bounce prediction off walls (max 10 iterations as safety)
+          const halfWidth = CONFIG.court.width / 2;
+          let bounces = 0;
+          while (Math.abs(predictedX) > halfWidth && bounces < 10) {
+            if (predictedX > halfWidth) {
+              predictedX = 2 * halfWidth - predictedX;
+            } else {
+              predictedX = -2 * halfWidth - predictedX;
+            }
+            bounces++;
+          }
+          if (Math.abs(predictedX) > halfWidth) {
+            predictedX = Math.max(-halfWidth, Math.min(halfWidth, predictedX));
+          }
+
+          // Add error (grows with combo)
+          const error = (Math.random() - 0.5) * 2 * effectiveError * halfWidth;
+
+          // Panic chance on long rallies: AI moves wrong direction
+          const panicChance = Math.min(rallyCombo * 0.03, 0.25);
+          if (Math.random() < panicChance) {
+            this.targetX = -predictedX + error * 2;
+          } else {
+            this.targetX = predictedX + error;
+          }
         }
       } else {
         // Ball moving away — drift to center
