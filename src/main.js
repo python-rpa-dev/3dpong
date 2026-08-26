@@ -30,12 +30,9 @@ function gameLoop(time) {
 
   try {
     game.update(dt);
-  } catch (e) {
-    console.error('Game update error:', e);
-  }
 
-  // Drain game events and trigger effects/sounds
-  const events = game.drainEvents();
+    // Drain game events and trigger effects/sounds
+    const events = game.drainEvents();
   for (const evt of events) {
     switch (evt.type) {
       case 'wallBounce':
@@ -97,6 +94,9 @@ function gameLoop(time) {
 
   // Update UI
   ui.update();
+  } catch (e) {
+    console.error('Game loop error:', e);
+  }
 
   requestAnimationFrame(gameLoop);
 }

@@ -10,6 +10,28 @@ export class Effects {
     this.shakeDuration = 0;
     this.shakeMagnitude = 0;
 
+    // Screen flash
+    this.flashMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(100, 100),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })
+    );
+    this.flashMesh.position.z = -50;
+    this.flashMesh.visible = false;
+    scene.add(this.flashMesh);
+    this.flashTime = 0;
+    this.flashDuration = 0;
+
+    // Combo rings
+    this.rings = [];
+    const ringGeo = new THREE.RingGeometry(0.3, 0.5, 32);
+    for (let i = 0; i < 5; i++) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
+      const mesh = new THREE.Mesh(ringGeo, mat);
+      mesh.visible = false;
+      scene.add(mesh);
+      this.rings.push({ mesh, life: 0, maxLife: 0 });
+    }
+
     // Pre-create particle pool
     const particleGeo = new THREE.SphereGeometry(0.08, 4, 4);
     for (let i = 0; i < 100; i++) {
@@ -30,6 +52,34 @@ export class Effects {
         maxLife: 0,
       });
     }
+  }
+
+  triggerShake(magnitude, duration) {
+    this.shakeMagnitude = magnitude;
+    this.shakeDuration = duration;
+    this.shakeTime = duration;
+  }
+
+  triggerScreenFlash(color, duration) {
+    this.flashMesh.material.color.setHex(color);
+    this.flashMesh.material.opacity = 0.4;
+    this.flashMesh.visible = true;
+    this.flashTime = duration;
+    this.flashDuration = duration;
+  }
+
+  spawnComboRing(x, y, z, combo) {
+    const ring = this.rings.find(r => r.life <= 0);
+    if (!ring) return;
+    ring.mesh.position.set(x, y, z);
+    ring.mesh.rotation.set(0, 0, 0);
+    const color = CONFIG.fun.comboColors[Math.min(combo - 1, CONFIG.fun.comboColors.length - 1)] || 0xffffff;
+    ring.mesh.material.color.setHex(color);
+    ring.mesh.material.opacity = 1;
+    ring.mesh.scale.set(1, 1, 1);
+    ring.mesh.visible = true;
+    ring.life = 0.6;
+    ring.maxLife = 0.6;
   }
 
   spawnHit(x, z, color) {
@@ -120,6 +170,30 @@ export class Effects {
     } else {
       this.shakeOffset.set(0, 0, 0);
     }
+
+    // Update screen flash
+    if (this.flashTime > 0) {
+      this.flashTime -= dt;
+      const t = Math.max(0, this.flashTime / this.flashDuration);
+      this.flashMesh.material.opacity = 0.4 * t;
+      if (this.flashTime <= 0) {
+        this.flashMesh.visible = false;
+      }
+    }
+
+    // Update combo rings
+    for (const ring of this.rings) {
+      if (ring.life > 0) {
+        ring.life -= dt;
+        const t = Math.max(0, ring.life / ring.maxLife);
+        ring.mesh.material.opacity = t;
+        const scale = 1 + (1 - t) * 3;
+        ring.mesh.scale.set(scale, scale, scale);
+        if (ring.life <= 0) {
+          ring.mesh.visible = false;
+        }
+      }
+    }
   }
 
   clear() {
@@ -127,6 +201,12 @@ export class Effects {
       p.life = 0;
       p.mesh.visible = false;
     }
+    for (const ring of this.rings) {
+      ring.life = 0;
+      ring.mesh.visible = false;
+    }
+    this.flashTime = 0;
+    this.flashMesh.visible = false;
     this.shakeTime = 0;
     this.shakeOffset.set(0, 0, 0);
   }
