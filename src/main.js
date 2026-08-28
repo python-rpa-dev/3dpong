@@ -129,6 +129,14 @@ function gameLoop(time) {
     game._gameOverSoundPlayed = false;
   }
 
+  // Rally music follows game state + combo intensity
+  if (settings.get('music') && audio.enabled && game.state === 'PLAYING') {
+    if (!audio.musicPlaying) audio.startMusic();
+    audio.setMusicIntensity(game.rallyCombo);
+  } else if (audio.musicPlaying) {
+    audio.stopMusic();
+  }
+
   // Update renderers
   ballRenderer.setGhost(game.isBallHidden(game.threatBall()));
   ballRenderer.update(game.balls, dt, game.rallyCombo);

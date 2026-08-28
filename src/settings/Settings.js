@@ -13,6 +13,7 @@ const DEFAULTS = {
   netGraze: true,
   bloom: true,
   catchMode: false,
+  music: true,
 };
 
 export class Settings {
