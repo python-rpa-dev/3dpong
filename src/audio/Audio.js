@@ -13,7 +13,7 @@ export class Audio {
     }
   }
 
-  playPaddleHit(speed) {
+  playPaddleHit(speed, combo = 0) {
     if (!this.enabled) return;
     this._ensureContext();
     if (!this.ctx) return;
@@ -22,7 +22,9 @@ export class Audio {
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.type = 'sine';
-    osc.frequency.value = 200 + (speed / 40) * 400;
+    // Rally ramp: pitch climbs ~semitone-ish per hit, capped so it stays pleasant
+    const comboStep = Math.min(combo, 16) * 22;
+    osc.frequency.value = 200 + (speed / 40) * 400 + comboStep;
     gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
     osc.start();
@@ -45,6 +47,23 @@ export class Audio {
     osc.stop(this.ctx.currentTime + 0.05);
   }
 
+  playNetGrazed() {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(900, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(550, this.ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.12);
+  }
+
   playScore(isPlayer) {
     if (!this.enabled) return;
     this._ensureContext();
@@ -65,6 +84,100 @@ export class Audio {
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
     osc.start();
     osc.stop(this.ctx.currentTime + 0.3);
+  }
+
+  playComboMilestone(combo) {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    // Rising major arpeggio, pitch climbs with each milestone (5, 10, 15, ...)
+    const milestone = Math.max(1, Math.floor(combo / 5));
+    const root = 440 * Math.pow(2, Math.min(milestone - 1, 4) / 12);
+    const intervals = [1, 1.25, 1.5, 2];
+    intervals.forEach((ratio, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = root * ratio;
+      const t = this.ctx.currentTime + i * 0.06;
+      gain.gain.setValueAtTime(0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.start(t);
+      osc.stop(t + 0.15);
+    });
+  }
+
+  playPowerup(puType) {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    const freqs = {
+      wide: [523, 784],
+      shrink: [392, 262],
+      slowmo: [660, 330, 165],
+      double: [523, 523, 784],
+    };
+    const notes = freqs[puType] || [440];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = this.ctx.currentTime + i * 0.07;
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    });
+  }
+
+  playPaddleShift(mode) {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    // shrink: downward sweep, grow: upward sweep
+    const t0 = this.ctx.currentTime;
+    if (mode === 'shrink') {
+      osc.frequency.setValueAtTime(300, t0);
+      osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.15);
+    } else {
+      osc.frequency.setValueAtTime(150, t0);
+      osc.frequency.exponentialRampToValueAtTime(380, t0 + 0.15);
+    }
+    gain.gain.setValueAtTime(0.1, t0);
+    gain.gain.exponentialRampToValueAtTime(0.01, t0 + 0.15);
+    osc.start(t0);
+    osc.stop(t0 + 0.15);
+  }
+
+  playMultiBall() {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    // Quick rising double-blip signaling a second ball
+    const notes = [660, 880, 1320];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const t = this.ctx.currentTime + i * 0.05;
+      gain.gain.setValueAtTime(0.14, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    });
   }
 
   playWin() {

@@ -4,6 +4,14 @@ const DEFAULTS = {
   difficulty: 'medium',
   winScore: 11,
   deuce: true,
+  gameMode: 'fun',
+  playerMode: 'ai',
+  powerups: true,
+  multiBall: true,
+  paddleShifts: true,
+  aiTaunts: true,
+  netGraze: true,
+  bloom: true,
 };
 
 export class Settings {

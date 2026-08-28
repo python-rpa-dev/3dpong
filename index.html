@@ -14,10 +14,17 @@
       <span id="score-separator">:</span>
       <span id="opponent-score">0</span>
     </div>
+    <div id="combo-display" class="hidden">
+      <span id="combo-count">0</span>
+      <span id="combo-label">RALLY</span>
+    </div>
+    <div id="powerup-toast" class="hidden"></div>
+    <div id="taunt-bubble" class="hidden"></div>
 
     <div id="menu-screen" class="screen">
       <h1>PONG 3D</h1>
       <p class="subtitle">Isometric Neon Pong</p>
+      <p id="menu-records" class="subtitle hidden"></p>
       <button id="btn-play" class="neon-btn">PLAY</button>
       <button id="btn-settings" class="neon-btn">SETTINGS</button>
     </div>
@@ -38,6 +45,13 @@
     <div id="settings-screen" class="screen hidden">
       <h2>SETTINGS</h2>
       <div class="setting-row">
+        <label>Opponent</label>
+        <select id="setting-playermode">
+          <option value="ai" selected>vs CPU</option>
+          <option value="versus">2 Players (local)</option>
+        </select>
+      </div>
+      <div class="setting-row">
         <label>Difficulty</label>
         <select id="setting-difficulty">
           <option value="easy">Easy</option>
@@ -55,11 +69,57 @@
         </select>
       </div>
       <div class="setting-row">
+        <label>Game Mode</label>
+        <select id="setting-gamemode">
+          <option value="classic">Classic (Dull)</option>
+          <option value="fun" selected>Fun (Spin + Speed + Combo)</option>
+        </select>
+      </div>
+      <div class="setting-row">
         <label>Deuce (win by 2)</label>
         <select id="setting-deuce">
           <option value="true" selected>On</option>
           <option value="false">Off</option>
         </select>
+      </div>
+      <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-bloom" checked>
+          Bloom glow (neon post-processing)
+        </label>
+      </div>
+      <div id="fun-settings">
+        <h3 class="fun-label">FUN MODE EXTRAS</h3>
+        <div class="setting-row checkbox-row">
+          <label>
+            <input type="checkbox" id="setting-powerups" checked>
+            Power-ups (paddle boost, shrink opponent, slow-mo, double points)
+          </label>
+        </div>
+        <div class="setting-row checkbox-row">
+          <label>
+            <input type="checkbox" id="setting-multiball" checked>
+            Multi-ball (2nd ball at 10+ combo)
+          </label>
+        </div>
+        <div class="setting-row checkbox-row">
+          <label>
+            <input type="checkbox" id="setting-paddleshifts" checked>
+            Paddle shifts (edge hit shrinks AI, center hit grows AI)
+          </label>
+        </div>
+        <div class="setting-row checkbox-row">
+          <label>
+            <input type="checkbox" id="setting-aitaunts" checked>
+            AI personalities + taunts
+          </label>
+        </div>
+        <div class="setting-row checkbox-row">
+          <label>
+            <input type="checkbox" id="setting-netgraze" checked>
+            Net graze (rare lucky deflection at the net)
+          </label>
+        </div>
       </div>
       <button id="btn-save-settings" class="neon-btn">SAVE</button>
       <button id="btn-back" class="neon-btn">BACK</button>

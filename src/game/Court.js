@@ -22,7 +22,7 @@ export class Court {
     return false;
   }
 
-  checkPaddleBounce(ball, paddle) {
+  checkPaddleBounce(ball, paddle, funMode = false) {
     if (!ball.active) return false;
 
     const pz = paddle.z;
@@ -48,10 +48,14 @@ export class Court {
     // Bounce
     const offset = (ball.x - paddle.x) / pw;
     const clampedOffset = Math.max(-1, Math.min(1, offset));
-    const angle = clampedOffset * CONFIG.paddle.maxBounceAngle;
 
-    ball.vx = Math.sin(angle) * ball.speed;
-    ball.vz = Math.cos(angle) * ball.speed * (pz > 0 ? -1 : 1);
+    if (funMode) {
+      ball.hitPaddle(paddle.x, paddle.width, true);
+    } else {
+      const angle = clampedOffset * CONFIG.paddle.maxBounceAngle;
+      ball.vx = Math.sin(angle) * ball.speed;
+      ball.vz = Math.cos(angle) * ball.speed * (pz > 0 ? -1 : 1);
+    }
 
     // Push ball out of paddle
     if (pz > 0) {
@@ -60,7 +64,7 @@ export class Court {
       ball.z = zFar + ball.radius;
     }
 
-    return true;
+    return { hit: true, offset: clampedOffset };
   }
 
   checkScore(ball) {

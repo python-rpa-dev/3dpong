@@ -2,13 +2,14 @@ import { Paddle } from './Paddle.js';
 import { CONFIG } from '../config.js';
 
 export class AIPaddle extends Paddle {
-  constructor(difficulty = 'medium') {
+  constructor(difficulty = 'medium', personality = null) {
     super(CONFIG.paddle.opponentZ);
     this.difficulty = difficulty;
     const aiConfig = CONFIG.ai[difficulty];
     this.reactionDelay = aiConfig.reactionDelay;
     this.maxSpeed = aiConfig.maxSpeed;
     this.errorFactor = aiConfig.error;
+    this.personality = personality || { errorScale: 1, delayScale: 1 };
     this.targetX = 0;
     this.lastUpdate = 0;
     this.time = 0;
@@ -22,30 +23,51 @@ export class AIPaddle extends Paddle {
     this.errorFactor = aiConfig.error;
   }
 
-  update(dt, ball) {
+  update(dt, ball, rallyCombo = 0) {
     this.time += dt;
 
-    if (this.time >= this.lastUpdate + this.reactionDelay) {
+    // Rally combo makes the AI worse: bigger errors, slower reaction
+    const comboScale = 1 + Math.min(rallyCombo * 0.12, 1.5);
+    const effectiveDelay = this.reactionDelay * comboScale * this.personality.delayScale;
+    const effectiveError = this.errorFactor * comboScale * this.personality.errorScale;
+
+    if (this.time >= this.lastUpdate + effectiveDelay) {
       this.lastUpdate = this.time;
 
       if (ball.active && ball.vz > 0) {
         // Ball moving toward AI — predict where it will be
-        const timeToReach = (this.z - ball.z) / ball.vz;
-        let predictedX = ball.x + ball.vx * timeToReach;
+        if (Math.abs(ball.vz) < 0.01) {
+          this.targetX = 0;
+        } else {
+          const timeToReach = (this.z - ball.z) / ball.vz;
+          let predictedX = ball.x + ball.vx * timeToReach;
 
-        // Bounce prediction off walls
-        const halfWidth = CONFIG.court.width / 2;
-        while (Math.abs(predictedX) > halfWidth) {
-          if (predictedX > halfWidth) {
-            predictedX = 2 * halfWidth - predictedX;
+          // Bounce prediction off walls (max 10 iterations as safety)
+          const halfWidth = CONFIG.court.width / 2;
+          let bounces = 0;
+          while (Math.abs(predictedX) > halfWidth && bounces < 10) {
+            if (predictedX > halfWidth) {
+              predictedX = 2 * halfWidth - predictedX;
+            } else {
+              predictedX = -2 * halfWidth - predictedX;
+            }
+            bounces++;
+          }
+          if (Math.abs(predictedX) > halfWidth) {
+            predictedX = Math.max(-halfWidth, Math.min(halfWidth, predictedX));
+          }
+
+          // Add error (grows with combo)
+          const error = (Math.random() - 0.5) * 2 * effectiveError * halfWidth;
+
+          // Panic chance on long rallies: AI moves wrong direction
+          const panicChance = Math.min(rallyCombo * 0.03, 0.25);
+          if (Math.random() < panicChance) {
+            this.targetX = -predictedX + error * 2;
           } else {
-            predictedX = -2 * halfWidth - predictedX;
+            this.targetX = predictedX + error;
           }
         }
-
-        // Add error
-        const error = (Math.random() - 0.5) * 2 * this.errorFactor * halfWidth;
-        this.targetX = predictedX + error;
       } else {
         // Ball moving away — drift to center
         this.targetX = 0;

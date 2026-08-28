@@ -7,15 +7,23 @@ export class Ball {
     this.vx = 0;
     this.vz = 0;
     this.speed = CONFIG.ball.initialSpeed;
+    this.baseSpeed = CONFIG.ball.initialSpeed;
     this.radius = CONFIG.ball.radius;
     this.active = false;
+    this.rallyHits = 0;
+    this.speedMultiplier = 1;
   }
 
-  reset(direction) {
+  reset(direction, aimX = null) {
     this.x = 0;
     this.z = 0;
-    this.speed = CONFIG.ball.initialSpeed;
-    const angle = (Math.random() - 0.5) * 0.4;
+    this.prevZ = 0;
+    this.speed = this.baseSpeed;
+    this.speedMultiplier = 1;
+    this.rallyHits = 0;
+    const angle = aimX === null
+      ? (Math.random() - 0.5) * 0.4
+      : Math.max(-1, Math.min(1, aimX)) * CONFIG.serve.maxAimAngle;
     this.vx = Math.sin(angle) * this.speed;
     this.vz = Math.cos(angle) * this.speed * direction;
     this.active = true;
@@ -23,8 +31,53 @@ export class Ball {
 
   update(dt) {
     if (!this.active) return;
+    this.prevZ = this.z;
     this.x += this.vx * dt;
     this.z += this.vz * dt;
+  }
+
+  /** True on the frame the ball crosses the net line (z = 0). */
+  crossedNet() {
+    return this.active && this.prevZ !== 0 && this.z !== 0 && Math.sign(this.z) !== Math.sign(this.prevZ);
+  }
+
+  /**
+   * Handle paddle collision with spin and optional speed ramp.
+   * @param {number} paddleX - paddle center x
+   * @param {number} paddleWidth - paddle width
+   * @param {boolean} funMode - enable spin + speed ramp
+   * @returns {{offset: number, angle: number}} hit info
+   */
+  hitPaddle(paddleX, paddleWidth, funMode = false) {
+    const offset = (this.x - paddleX) / (paddleWidth / 2);
+    const clampedOffset = Math.max(-1, Math.min(1, offset));
+
+    if (funMode) {
+      // Speed ramp: ball accelerates each hit
+      this.rallyHits++;
+      this.speedMultiplier = Math.min(
+        1 + this.rallyHits * CONFIG.fun.speedRampPerHit,
+        CONFIG.fun.maxSpeedMultiplier
+      );
+      this.speed = this.baseSpeed * this.speedMultiplier;
+
+      // Spin: sharper angles at edges
+      const angle = clampedOffset * (0.5 + Math.abs(clampedOffset) * CONFIG.fun.spinFactor);
+
+      const dir = this.vz > 0 ? -1 : 1;
+      this.vx = Math.sin(angle) * this.speed;
+      this.vz = Math.cos(angle) * this.speed * dir;
+
+      return { offset: clampedOffset, angle };
+    } else {
+      // Classic: simple fixed-angle bounce
+      const angle = clampedOffset * 0.5;
+      const dir = this.vz > 0 ? -1 : 1;
+      this.vx = Math.sin(angle) * this.speed;
+      this.vz = Math.cos(angle) * this.speed * dir;
+
+      return { offset: clampedOffset, angle };
+    }
   }
 
   increaseSpeed() {
