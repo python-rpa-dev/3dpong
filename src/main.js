@@ -130,7 +130,7 @@ function gameLoop(time) {
   }
 
   // Update renderers
-  ballRenderer.update(game.balls, dt);
+  ballRenderer.update(game.balls, dt, game.rallyCombo);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   powerupRenderer.update(game.powerups.active, dt);
   aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);

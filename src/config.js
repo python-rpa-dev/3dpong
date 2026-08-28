@@ -69,6 +69,8 @@ export const CONFIG = {
   postfx: {
     bloom: { strength: 0.7, radius: 0.5, threshold: 0.82 },
   },
+
+  comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
   paddleShifts: {
     edgeThreshold: 0.65,
     centerThreshold: 0.2,

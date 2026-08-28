@@ -1,3 +1,5 @@
+import { CONFIG } from '../config.js';
+
 export class UI {
   constructor(game, settings) {
     this.game = game;
@@ -144,7 +146,7 @@ export class UI {
           this.comboDisplay.classList.remove('hidden');
           this.comboCountEl.textContent = this.game.rallyCombo;
           // Color shifts with combo
-          const colors = [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95];
+          const colors = CONFIG.comboColors;
           const idx = Math.min(Math.floor(this.game.rallyCombo / 3), colors.length - 1);
           this.comboCountEl.style.color = '#' + colors[idx].toString(16).padStart(6, '0');
         } else {

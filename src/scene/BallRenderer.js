@@ -91,7 +91,7 @@ export class BallRenderer {
     this.squashAxis = axis;
   }
 
-  update(balls, dt = 1 / 60) {
+  update(balls, dt = 1 / 60, combo = 0) {
     if (!Array.isArray(balls)) balls = [balls];
     const primary = balls[0];
 
@@ -160,10 +160,14 @@ export class BallRenderer {
     this.light.color.copy(color);
     this.light.intensity = 0.8 + speedRatio * 1.2;
 
-    // Trail intensity scales with speed
-    const trailOpacity = 0.15 + speedRatio * 0.35;
+    // Trail intensity scales with speed; hue walks the combo palette
+    const palette = CONFIG.comboColors;
+    const comboColor = new THREE.Color(palette[Math.min(Math.floor(combo / 3), palette.length - 1)]);
+    const trailMix = Math.min(combo / 12, 0.75);
+    const trailColor = color.clone().lerp(comboColor, trailMix);
+    const trailOpacity = 0.15 + speedRatio * 0.35 + Math.min(combo * 0.01, 0.15);
     for (let i = 0; i < this.trailLength; i++) {
-      this.trailMeshes[i].material.color.copy(color);
+      this.trailMeshes[i].material.color.copy(trailColor);
       this.trailMeshes[i].material.opacity = trailOpacity * (1 - i / this.trailLength);
     }
 
