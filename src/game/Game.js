@@ -47,6 +47,9 @@ export class Game {
     this.pointStreak = 0;
     this._lastScorer = null;
     this._gameOverSoundPlayed = false;
+    this._grazes = 0;
+    this._shrinks = 0;
+    this._minMargin = 0;
   }
 
   isFunMode() {
@@ -129,6 +132,25 @@ export class Game {
     if (this.records && this.records.noteRally(this.rallyCombo)) {
       this.events.push({ type: 'record', kind: 'rally', value: this.rallyCombo });
     }
+    if (this.achievementsEnabled() && this.rallyCombo >= 20) {
+      this.tryUnlock('rally20');
+    }
+  }
+
+  achievementsEnabled() {
+    return !!this.records && !this.isVersus();
+  }
+
+  tryUnlock(id) {
+    if (this.records.unlock(id)) {
+      this.events.push({ type: 'achievement', id });
+    }
+  }
+
+  noteOpponentShrink(affected, scale) {
+    if (!this.achievementsEnabled() || affected !== 'ai' || !(scale < 1)) return;
+    this._shrinks++;
+    if (this._shrinks >= 3) this.tryUnlock('shrink_triple');
   }
 
   start() {
@@ -149,6 +171,9 @@ export class Game {
     this._tauntedImpressed = false;
     this.pointStreak = 0;
     this._lastScorer = null;
+    this._grazes = 0;
+    this._shrinks = 0;
+    this._minMargin = 0;
     this.score.winScore = this.settings.get('winScore');
     this.score.deuce = this.settings.get('deuce');
     this.score.reset();
@@ -235,6 +260,11 @@ export class Game {
             this.state = STATES.GAME_OVER;
             this.winner = winner;
             if (this.records) this.records.noteResult(winner === 'player');
+            if (winner === 'player' && this.achievementsEnabled()) {
+              this.tryUnlock('first_win');
+              if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
+              if (this._minMargin <= -5) this.tryUnlock('comeback');
+            }
           } else {
             this.balls.length = 1;
             this.ball.reset(this.serveDirection);
@@ -263,6 +293,8 @@ export class Game {
           && Math.random() < CONFIG.fun.netGrazeChance) {
         const nudge = 1 + (Math.random() - 0.5) * 2 * CONFIG.fun.netGrazeNudge;
         ball.vx *= nudge;
+        this._grazes++;
+        if (this.achievementsEnabled() && this._grazes >= 3) this.tryUnlock('grazer_3');
         this.events.push({ type: 'netGrazed', x: ball.x, z: 0 });
       }
 
@@ -316,6 +348,7 @@ export class Game {
           }
         }
         this.score.addPoint(side, points);
+        this._minMargin = Math.min(this._minMargin, this.score.playerScore - this.score.opponentScore);
         this.state = STATES.SCORED;
         this.hitStopTimer = CONFIG.hitStop.score;
         this.scoreTimer = CONFIG.serve.scoreDelay;
@@ -362,6 +395,7 @@ export class Game {
         e => !(e.target === affected && (e.type === 'wide' || e.type === 'shrink'))
       );
       this.activeEffects.push({ type, target: affected, scale, timeLeft: duration });
+      if (type === 'shrink') this.noteOpponentShrink(affected, scale);
     }
 
     this.events.push({ type: 'powerup', puType: type, target });
@@ -390,6 +424,7 @@ export class Game {
     // One shift per paddle at a time; freshest wins
     this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shift' && e.target === affected));
     this.activeEffects.push({ type: 'shift', target: affected, scale, timeLeft: cfg.duration });
+    this.noteOpponentShrink(affected, scale);
     this.events.push({
       type: 'paddleShift',
       affected,

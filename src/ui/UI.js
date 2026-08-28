@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { ACHIEVEMENTS } from '../settings/Records.js';
 
 export class UI {
   constructor(game, settings) {
@@ -305,10 +306,35 @@ export class UI {
     const r = this.records.data;
     if (r.bestRally === 0 && r.wins === 0 && r.losses === 0) {
       el.classList.add('hidden');
-      return;
+    } else {
+      el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
+      el.classList.remove('hidden');
     }
-    el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
-    el.classList.remove('hidden');
+    const achEl = document.getElementById('menu-achievements');
+    if (achEl) {
+      const unlocked = ACHIEVEMENTS.filter(a => this.records.has(a.id));
+      if (unlocked.length === 0) {
+        achEl.classList.add('hidden');
+      } else {
+        achEl.textContent = `TROPHIES ${unlocked.length}/${ACHIEVEMENTS.length}: ${unlocked.map(a => a.label).join(' · ')}`;
+        achEl.classList.remove('hidden');
+      }
+    }
+  }
+
+  showAchievement(id) {
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    if (!ach) return;
+    this.powerupToastEl.textContent = `ACHIEVEMENT UNLOCKED — ${ach.label}!`;
+    this.powerupToastEl.style.color = '#ffcc00';
+    this.powerupToastEl.classList.add('hidden');
+    void this.powerupToastEl.offsetWidth;
+    this.powerupToastEl.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      this.powerupToastEl.classList.add('hidden');
+    }, 2500);
+    this.updateMenuRecords();
   }
 
   showRecord(kind, value) {
