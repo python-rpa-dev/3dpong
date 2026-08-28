@@ -282,6 +282,7 @@ export class Game {
       const aiHit = this.court.checkPaddleBounce(ball, this.aiPaddle, fun);
       if (aiHit) {
         if (!fun) ball.increaseSpeed();
+        if (this.settings.get('catchMode')) ball.applyCatchAssist(CONFIG.fun.catchSpeedFactor);
         this.rallyCombo++;
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'ai';

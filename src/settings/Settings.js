@@ -12,6 +12,7 @@ const DEFAULTS = {
   aiTaunts: true,
   netGraze: true,
   bloom: true,
+  catchMode: false,
 };
 
 export class Settings {

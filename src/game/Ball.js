@@ -90,6 +90,19 @@ export class Ball {
     }
   }
 
+  /**
+   * Catch mode assist: slow the ball after an AI hit so beginners can rally longer.
+   */
+  applyCatchAssist(factor) {
+    this.speed = Math.max(this.baseSpeed, this.speed * factor);
+    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vz * this.vz);
+    if (currentSpeed > 0) {
+      const scale = this.speed / currentSpeed;
+      this.vx *= scale;
+      this.vz *= scale;
+    }
+  }
+
   get currentSpeed() {
     return Math.sqrt(this.vx * this.vx + this.vz * this.vz);
   }

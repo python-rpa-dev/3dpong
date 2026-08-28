@@ -33,6 +33,7 @@ export class UI {
     document.getElementById('setting-aitaunts').checked = settings.get('aiTaunts');
     document.getElementById('setting-netgraze').checked = settings.get('netGraze');
     document.getElementById('setting-bloom').checked = settings.get('bloom');
+    document.getElementById('setting-catchmode').checked = settings.get('catchMode');
     this.updateFunSettingsVisibility();
 
     // Button handlers
@@ -108,6 +109,7 @@ export class UI {
     this.settings.set('aiTaunts', document.getElementById('setting-aitaunts').checked);
     this.settings.set('netGraze', document.getElementById('setting-netgraze').checked);
     this.settings.set('bloom', document.getElementById('setting-bloom').checked);
+    this.settings.set('catchMode', document.getElementById('setting-catchmode').checked);
     this.settings.save();
 
     this.showMenu();
