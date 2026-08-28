@@ -55,6 +55,11 @@ export const CONFIG = {
     hitShakeDuration: 0.08,
     scoreShakeDuration: 0.2,
   },
+  hitStop: {
+    paddle: 0.025,
+    score: 0.14,
+    maxComboScale: 0.03, // extra freeze seconds added at high combo
+  },
   serve: {
     delay: 0.8,
     scoreDelay: 1.0,

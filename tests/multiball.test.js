@@ -3,8 +3,57 @@ import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
 
 const makeSettings = (overrides = {}) => ({
-  data: { gameMode: 'fun', multiBall: true, powerups: false, difficulty: 'medium', winScore: 11, ...overrides },
+  data: { gameMode: 'fun', multiBall: true, powerups: false, paddleShifts: false, difficulty: 'medium', winScore: 11, ...overrides },
   get(key) { return this.data[key]; },
+});
+
+describe('Hit-stop', () => {
+  it('freezes the simulation while the timer runs, then resumes', () => {
+    const game = new Game(makeSettings({ multiBall: false }));
+    game.start();
+    game.state = 'PLAYING';
+    game.ball.active = true;
+    game.ball.x = 0;
+    game.ball.z = 0;
+    game.ball.vx = 5;
+    game.ball.vz = 10;
+
+    game.hitStopTimer = 0.1;
+    game.update(0.05);
+    expect(game.ball.x).toBe(0); // frozen
+    expect(game.ball.z).toBe(0);
+    expect(game.hitStopTimer).toBeCloseTo(0.05);
+
+    game.hitStopTimer = 0;
+    game.update(0.05);
+    expect(game.ball.x).toBeCloseTo(0.25); // moving again
+  });
+
+  it('a score triggers a hit-stop freeze', () => {
+    const game = new Game(makeSettings({ multiBall: false }));
+    game.start();
+    game.state = 'PLAYING';
+    game.aiPaddle.x = 9;
+    game.ball.active = true;
+    game.ball.z = CONFIG.court.depth / 2 + 2;
+    game.ball.vz = 10;
+    game.handleCollisions();
+    expect(game.state).toBe('SCORED');
+    expect(game.hitStopTimer).toBeCloseTo(CONFIG.hitStop.score);
+  });
+
+  it('a paddle hit triggers a small hit-stop', () => {
+    const game = new Game(makeSettings({ multiBall: false }));
+    game.start();
+    game.state = 'PLAYING';
+    game.ball.active = true;
+    game.ball.x = 0;
+    game.ball.z = CONFIG.paddle.playerZ + CONFIG.ball.radius;
+    game.ball.vz = -1;
+    game.playerPaddle.x = 0;
+    game.handleCollisions();
+    expect(game.hitStopTimer).toBeGreaterThanOrEqual(CONFIG.hitStop.paddle);
+  });
 });
 
 describe('Multi-ball', () => {

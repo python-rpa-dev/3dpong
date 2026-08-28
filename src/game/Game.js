@@ -36,6 +36,7 @@ export class Game {
     this.timeScale = 1;
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
+    this.hitStopTimer = 0;
     this._gameOverSoundPlayed = false;
   }
 
@@ -114,6 +115,12 @@ export class Game {
   }
 
   update(dt) {
+    // Hit-stop: brief simulation freeze so impacts register (visuals keep animating)
+    if (this.hitStopTimer > 0 && (this.state === STATES.PLAYING || this.state === STATES.SCORED)) {
+      this.hitStopTimer -= dt;
+      return;
+    }
+
     switch (this.state) {
       case STATES.SERVE:
         this.serveTimer -= dt;
@@ -182,6 +189,7 @@ export class Game {
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'player';
         this.applyPaddleShift('player', playerHit.offset);
+        this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
       }
 
@@ -193,6 +201,7 @@ export class Game {
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'ai';
         this.applyPaddleShift('ai', aiHit.offset);
+        this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
       }
 
@@ -213,6 +222,7 @@ export class Game {
         }
         this.score.addPoint(scorer, points);
         this.state = STATES.SCORED;
+        this.hitStopTimer = CONFIG.hitStop.score;
         this.scoreTimer = CONFIG.serve.scoreDelay;
         this.serveDirection = scorer === 'player' ? 1 : -1;
         this.events.push({ type: 'score', who: scorer, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
