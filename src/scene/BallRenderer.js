@@ -15,6 +15,7 @@ export class BallRenderer {
       emissiveIntensity: 0.5,
       roughness: 0.3,
       metalness: 0.1,
+      transparent: true,
     });
     this.mesh = new THREE.Mesh(geo, mat);
     scene.add(this.mesh);
@@ -91,6 +92,11 @@ export class BallRenderer {
     this.squashAxis = axis;
   }
 
+  /** Fade the ball out while a ghost powerup hides it from the opponent. */
+  setGhost(hidden) {
+    this.ghostHidden = !!hidden;
+  }
+
   update(balls, dt = 1 / 60, combo = 0) {
     if (!Array.isArray(balls)) balls = [balls];
     const primary = balls[0];
@@ -161,15 +167,19 @@ export class BallRenderer {
     this.light.intensity = 0.8 + speedRatio * 1.2;
 
     // Trail intensity scales with speed; hue walks the combo palette
+    this.ghostFade = (this.ghostFade || 0) + ((this.ghostHidden ? 1 : 0) - (this.ghostFade || 0)) * Math.min(1, dt * 8);
+    const ghostMul = 1 - this.ghostFade * 0.85;
     const palette = CONFIG.comboColors;
     const comboColor = new THREE.Color(palette[Math.min(Math.floor(combo / 3), palette.length - 1)]);
     const trailMix = Math.min(combo / 12, 0.75);
     const trailColor = color.clone().lerp(comboColor, trailMix);
-    const trailOpacity = 0.15 + speedRatio * 0.35 + Math.min(combo * 0.01, 0.15);
+    const trailOpacity = (0.15 + speedRatio * 0.35 + Math.min(combo * 0.01, 0.15)) * ghostMul;
     for (let i = 0; i < this.trailLength; i++) {
       this.trailMeshes[i].material.color.copy(trailColor);
       this.trailMeshes[i].material.opacity = trailOpacity * (1 - i / this.trailLength);
     }
+    this.mesh.material.opacity = Math.max(0.12, ghostMul);
+    this.light.intensity *= ghostMul;
 
     // Update trail (distance-based)
     const dist = this.lastTrailPos

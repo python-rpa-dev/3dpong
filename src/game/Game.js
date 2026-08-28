@@ -207,8 +207,9 @@ export class Game {
 
       case STATES.PLAYING: {
         const gdt = dt * this.timeScale;
-        this.playerPaddle.update(gdt);
-        this.aiPaddle.update(gdt, this.threatBall(), this.rallyCombo);
+        if (!this.playerPaddle.frozen) this.playerPaddle.update(gdt);
+        const threat = this.threatBall();
+        if (!this.aiPaddle.frozen) this.aiPaddle.update(gdt, threat, this.rallyCombo, this.isBallHidden(threat));
         for (const ball of this.balls) ball.update(gdt);
         this.handleCollisions();
 
@@ -343,6 +344,14 @@ export class Game {
     } else if (type === 'double') {
       this.doublePoints[target] = Math.max(this.doublePoints[target], cfg.doublePointsGoals);
       this.activeEffects.push({ type, target, goalsLeft: cfg.doublePointsGoals });
+    } else if (type === 'ghost') {
+      this.activeEffects = this.activeEffects.filter(e => e.type !== 'ghost');
+      this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationGhost });
+    } else if (type === 'freeze') {
+      // Freezes the opponent's paddle briefly
+      const affected = opponent;
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === affected));
+      this.activeEffects.push({ type, target: affected, timeLeft: cfg.durationFreeze });
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;
@@ -416,8 +425,15 @@ export class Game {
     let slowmo = false;
     let playerMult = 1;
     let aiMult = 1;
+    let playerFrozen = false;
+    let aiFrozen = false;
     for (const e of this.activeEffects) {
       if (e.type === 'slowmo') { slowmo = true; continue; }
+      if (e.type === 'freeze') {
+        if (e.target === 'player') playerFrozen = true;
+        else if (e.target === 'ai') aiFrozen = true;
+        continue;
+      }
       if (e.scale !== undefined) {
         if (e.target === 'player') playerMult *= e.scale;
         else if (e.target === 'ai') aiMult *= e.scale;
@@ -427,7 +443,15 @@ export class Game {
     const clamp = (m) => Math.max(0.5, Math.min(2, m));
     this.playerPaddle.width = this.playerPaddle.baseWidth * clamp(playerMult);
     this.aiPaddle.width = this.aiPaddle.baseWidth * clamp(aiMult);
+    this.playerPaddle.frozen = playerFrozen;
+    this.aiPaddle.frozen = aiFrozen;
     this.timeScale = slowmo ? cfg.slowmoScale : 1;
+  }
+
+  /** True while a ghost powerup hides balls heading toward the AI on its half. */
+  isBallHidden(ball) {
+    const ghost = this.activeEffects.some(e => e.type === 'ghost');
+    return ghost && ball.active && ball.vz > 0 && ball.z > 0;
   }
 
   drainEvents() {

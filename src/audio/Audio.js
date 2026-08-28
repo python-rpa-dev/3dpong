@@ -118,6 +118,8 @@ export class Audio {
       shrink: [392, 262],
       slowmo: [660, 330, 165],
       double: [523, 523, 784],
+      ghost: [880, 660, 494],
+      freeze: [1400, 300],
     };
     const notes = freqs[puType] || [440];
     notes.forEach((freq, i) => {

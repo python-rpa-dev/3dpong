@@ -23,7 +23,7 @@ export class AIPaddle extends Paddle {
     this.errorFactor = aiConfig.error;
   }
 
-  update(dt, ball, rallyCombo = 0) {
+  update(dt, ball, rallyCombo = 0, hidden = false) {
     this.time += dt;
 
     // Rally combo makes the AI worse: bigger errors, slower reaction
@@ -34,7 +34,7 @@ export class AIPaddle extends Paddle {
     if (this.time >= this.lastUpdate + effectiveDelay) {
       this.lastUpdate = this.time;
 
-      if (ball.active && ball.vz > 0) {
+      if (!hidden && ball.active && ball.vz > 0) {
         // Ball moving toward AI — predict where it will be
         if (Math.abs(ball.vz) < 0.01) {
           this.targetX = 0;

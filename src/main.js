@@ -130,6 +130,7 @@ function gameLoop(time) {
   }
 
   // Update renderers
+  ballRenderer.setGhost(game.isBallHidden(game.threatBall()));
   ballRenderer.update(game.balls, dt, game.rallyCombo);
   courtRenderer.update(game.rallyCombo, dt);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);

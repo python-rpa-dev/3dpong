@@ -68,7 +68,7 @@ export class PaddleRenderer {
     this.playerMesh.scale.set(pw * (1 + this.playerPop * 0.15), pPop, 1 + this.playerPop * 0.25);
     this.aiMesh.scale.set(aw * (1 + this.aiPop * 0.15), aPop, 1 + this.aiPop * 0.25);
 
-    // Flash decay
+    // Flash decay + frozen tint
     if (this.playerFlash > 0) {
       this.playerFlash = Math.max(0, this.playerFlash - dt * 10);
       this.playerMesh.material.emissiveIntensity = 0.4 + this.playerFlash * 0.8;
@@ -77,5 +77,11 @@ export class PaddleRenderer {
       this.aiFlash = Math.max(0, this.aiFlash - dt * 10);
       this.aiMesh.material.emissiveIntensity = 0.4 + this.aiFlash * 0.8;
     }
+    this.playerMesh.material.emissive.set(
+      playerPaddle.frozen ? 0x88ddff : CONFIG.colors.playerPaddle
+    );
+    this.aiMesh.material.emissive.set(
+      aiPaddle.frozen ? 0x88ddff : CONFIG.colors.opponentPaddle
+    );
   }
 }

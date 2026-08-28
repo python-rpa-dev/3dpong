@@ -90,9 +90,11 @@ export const CONFIG = {
     durationWide: 6,
     durationShrink: 6,
     durationSlowmo: 3,
+    durationGhost: 4,
+    durationFreeze: 1.2,
     doublePointsGoals: 2,
-    types: ['wide', 'shrink', 'slowmo', 'double'],
-    colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00 },
+    types: ['wide', 'shrink', 'slowmo', 'double', 'ghost', 'freeze'],
+    colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00, ghost: 0x9d7bff, freeze: 0x88ddff },
   },
   fun: {
     spinFactor: 0.6,
