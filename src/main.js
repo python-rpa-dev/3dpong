@@ -90,6 +90,9 @@ function gameLoop(time) {
         ui.showPowerupToast(evt.puType, evt.target);
         break;
       }
+      case 'taunt':
+        ui.showTaunt(evt.text);
+        break;
       case 'score': {
         const isPlayer = evt.who === 'player';
         audio.playScore(isPlayer);

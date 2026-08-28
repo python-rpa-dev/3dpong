@@ -4,6 +4,7 @@ import { AIPaddle } from './AIPaddle.js';
 import { Score } from './Score.js';
 import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
+import { pickPersonality } from './AIPersonality.js';
 import { CONFIG } from '../config.js';
 
 const STATES = {
@@ -21,9 +22,10 @@ export class Game {
     this.settings = settings;
     this.balls = [new Ball()];
     this.playerPaddle = new PlayerPaddle();
+    this.personality = settings.get('playerMode') === 'versus' ? null : pickPersonality();
     this.aiPaddle = settings.get('playerMode') === 'versus'
       ? new PlayerPaddle(CONFIG.paddle.opponentZ)
-      : new AIPaddle(settings.get('difficulty'));
+      : new AIPaddle(settings.get('difficulty'), this.personality);
     this.score = new Score(settings.get('winScore'));
     this.court = new Court();
     this.powerups = new PowerupManager();
@@ -40,6 +42,7 @@ export class Game {
     this.doublePoints = { player: 0, ai: 0 };
     this.hitStopTimer = 0;
     this.serveAimX = 0;
+    this._tauntedImpressed = false;
     this._gameOverSoundPlayed = false;
   }
 
@@ -106,13 +109,31 @@ export class Game {
     return this.isFunMode() && this.settings.get('powerups');
   }
 
+  tauntsEnabled() {
+    return !this.isVersus() && this.isFunMode() && !!this.personality && this.settings.get('aiTaunts');
+  }
+
+  emitTaunt(list) {
+    const text = list[Math.floor(Math.random() * list.length)];
+    this.events.push({ type: 'taunt', text });
+  }
+
   start() {
     const versus = this.isVersus();
-    if (versus && !(this.aiPaddle instanceof PlayerPaddle)) {
-      this.aiPaddle = new PlayerPaddle(CONFIG.paddle.opponentZ);
-    } else if (!versus && !(this.aiPaddle instanceof AIPaddle)) {
-      this.aiPaddle = new AIPaddle(this.settings.get('difficulty'));
+    if (versus) {
+      this.personality = null;
+      if (!(this.aiPaddle instanceof PlayerPaddle)) {
+        this.aiPaddle = new PlayerPaddle(CONFIG.paddle.opponentZ);
+      }
+    } else {
+      this.personality = pickPersonality();
+      if (this.aiPaddle instanceof AIPaddle) {
+        this.aiPaddle.personality = this.personality;
+      } else {
+        this.aiPaddle = new AIPaddle(this.settings.get('difficulty'), this.personality);
+      }
     }
+    this._tauntedImpressed = false;
     this.score.reset();
     this.balls = [new Ball()];
     this.rallyCombo = 0;
@@ -247,22 +268,33 @@ export class Game {
         this.spawnExtraBall(this.lastHitter);
       }
 
+      // AI impressed taunt at long rallies (once per rally)
+      if (this.tauntsEnabled() && !this._tauntedImpressed && this.rallyCombo >= CONFIG.fun.tauntImpressedCombo) {
+        this._tauntedImpressed = true;
+        this.emitTaunt(this.personality.impressed);
+      }
+
       // Score
       const scorer = this.court.checkScore(ball);
       if (scorer) {
-        const points = this.doublePoints[scorer] > 0 ? 2 : 1;
-        if (this.doublePoints[scorer] > 0) {
-          this.doublePoints[scorer]--;
-          if (this.doublePoints[scorer] === 0) {
-            this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === scorer));
+        const side = scorer === 'opponent' ? 'ai' : scorer;
+        const points = this.doublePoints[side] > 0 ? 2 : 1;
+        if (this.doublePoints[side] > 0) {
+          this.doublePoints[side]--;
+          if (this.doublePoints[side] === 0) {
+            this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === side));
           }
         }
-        this.score.addPoint(scorer, points);
+        this.score.addPoint(side, points);
         this.state = STATES.SCORED;
         this.hitStopTimer = CONFIG.hitStop.score;
         this.scoreTimer = CONFIG.serve.scoreDelay;
-        this.serveDirection = scorer === 'player' ? 1 : -1;
-        this.events.push({ type: 'score', who: scorer, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
+        this.serveDirection = side === 'player' ? 1 : -1;
+        if (this.tauntsEnabled()) {
+          this.emitTaunt(side === 'ai' ? this.personality.win : this.personality.lose);
+        }
+        this._tauntedImpressed = false;
+        this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
         break; // rally over
       }
     }

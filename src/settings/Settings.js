@@ -9,6 +9,7 @@ const DEFAULTS = {
   powerups: true,
   multiBall: true,
   paddleShifts: true,
+  aiTaunts: true,
 };
 
 export class Settings {

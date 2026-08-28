@@ -2,13 +2,14 @@ import { Paddle } from './Paddle.js';
 import { CONFIG } from '../config.js';
 
 export class AIPaddle extends Paddle {
-  constructor(difficulty = 'medium') {
+  constructor(difficulty = 'medium', personality = null) {
     super(CONFIG.paddle.opponentZ);
     this.difficulty = difficulty;
     const aiConfig = CONFIG.ai[difficulty];
     this.reactionDelay = aiConfig.reactionDelay;
     this.maxSpeed = aiConfig.maxSpeed;
     this.errorFactor = aiConfig.error;
+    this.personality = personality || { errorScale: 1, delayScale: 1 };
     this.targetX = 0;
     this.lastUpdate = 0;
     this.time = 0;
@@ -27,8 +28,8 @@ export class AIPaddle extends Paddle {
 
     // Rally combo makes the AI worse: bigger errors, slower reaction
     const comboScale = 1 + Math.min(rallyCombo * 0.12, 1.5);
-    const effectiveDelay = this.reactionDelay * comboScale;
-    const effectiveError = this.errorFactor * comboScale;
+    const effectiveDelay = this.reactionDelay * comboScale * this.personality.delayScale;
+    const effectiveError = this.errorFactor * comboScale * this.personality.errorScale;
 
     if (this.time >= this.lastUpdate + effectiveDelay) {
       this.lastUpdate = this.time;
