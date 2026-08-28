@@ -5,6 +5,7 @@ import { CourtRenderer } from './scene/CourtRenderer.js';
 import { BallRenderer } from './scene/BallRenderer.js';
 import { PaddleRenderer } from './scene/PaddleRenderer.js';
 import { PowerupRenderer } from './scene/PowerupRenderer.js';
+import { AimIndicator } from './scene/AimIndicator.js';
 import { Effects } from './scene/Effects.js';
 import { Game } from './game/Game.js';
 import { UI } from './ui/UI.js';
@@ -20,9 +21,14 @@ const courtRenderer = new CourtRenderer(scene.scene);
 const ballRenderer = new BallRenderer(scene.scene);
 const paddleRenderer = new PaddleRenderer(scene.scene);
 const powerupRenderer = new PowerupRenderer(scene.scene);
+const aimIndicator = new AimIndicator(scene.scene);
 const effects = new Effects(scene.scene);
 const game = new Game(settings);
 const ui = new UI(game, settings);
+
+ui.setScreenToWorld((clientX, clientY) =>
+  camera.screenToWorldX(clientX, clientY, window.innerWidth, window.innerHeight, CONFIG.paddle.playerZ)
+);
 
 let lastTime = performance.now();
 
@@ -110,6 +116,7 @@ function gameLoop(time) {
   ballRenderer.update(game.balls, dt);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   powerupRenderer.update(game.powerups.active, dt);
+  aimIndicator.update(game.state === 'SERVE', game.serveAimX, game.serveDirection, dt);
   effects.update(dt);
 
   // Apply screen shake to camera

@@ -4,6 +4,7 @@ export class UI {
     this.settings = settings;
     this.prevState = null;
     this.showingSettings = false;
+    this._screenToWorld = null;
 
     this.playerScoreEl = document.getElementById('player-score');
     this.opponentScoreEl = document.getElementById('opponent-score');
@@ -234,9 +235,18 @@ export class UI {
     }
   }
 
+  setScreenToWorld(fn) {
+    this._screenToWorld = fn;
+  }
+
   onMouseMove(e) {
     if (this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED') {
-      this.game.playerPaddle.setMouseTarget(e.clientX, window.innerWidth);
+      if (!this._screenToWorld) return;
+      const worldX = this._screenToWorld(e.clientX, e.clientY);
+      this.game.playerPaddle.setWorldTarget(worldX);
+      if (this.game.state === 'SERVE') {
+        this.game.setServeAimWorld(worldX);
+      }
     }
   }
 }

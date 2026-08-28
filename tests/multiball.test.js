@@ -143,3 +143,28 @@ describe('Multi-ball', () => {
     expect(game.balls.length).toBe(1);
   });
 });
+
+describe('Serve aim', () => {
+  it('setServeAimWorld clamps to normalized range', () => {
+    const game = new Game(makeSettings());
+    game.setServeAimWorld(0);
+    expect(game.serveAimX).toBe(0);
+    game.setServeAimWorld(CONFIG.court.width / 2);
+    expect(game.serveAimX).toBe(1);
+    game.setServeAimWorld(-999);
+    expect(game.serveAimX).toBe(-1);
+  });
+
+  it('serve uses the current aim', () => {
+    const game = new Game(makeSettings());
+    game.start();
+    game.setServeAimWorld(CONFIG.court.width / 2); // full right
+    let t = 0;
+    while (game.state === 'SERVE' && t < CONFIG.serve.delay + 0.5) {
+      game.update(0.1);
+      t += 0.1;
+    }
+    expect(game.state).toBe('PLAYING');
+    expect(game.ball.vx).toBeGreaterThan(0); // aimed toward +x
+  });
+});

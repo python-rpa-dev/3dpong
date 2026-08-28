@@ -37,6 +37,7 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.hitStopTimer = 0;
+    this.serveAimX = 0;
     this._gameOverSoundPlayed = false;
   }
 
@@ -58,6 +59,14 @@ export class Game {
 
   multiBallEnabled() {
     return this.isFunMode() && this.settings.get('multiBall');
+  }
+
+  /**
+   * Aim the next serve from a world-space x position (court center = 0).
+   */
+  setServeAimWorld(worldX) {
+    const halfWidth = CONFIG.court.width / 2;
+    this.serveAimX = Math.max(-1, Math.min(1, worldX / halfWidth));
   }
 
   spawnExtraBall(awayFrom) {
@@ -125,7 +134,7 @@ export class Game {
       case STATES.SERVE:
         this.serveTimer -= dt;
         if (this.serveTimer <= 0) {
-          this.ball.reset(this.serveDirection);
+          this.ball.reset(this.serveDirection, this.serveAimX);
           this.state = STATES.PLAYING;
         }
         break;

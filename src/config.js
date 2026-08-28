@@ -63,6 +63,7 @@ export const CONFIG = {
   serve: {
     delay: 0.8,
     scoreDelay: 1.0,
+    maxAimAngle: 0.5,
   },
   paddleShifts: {
     edgeThreshold: 0.65,

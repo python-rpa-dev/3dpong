@@ -9,10 +9,11 @@ export class PlayerPaddle extends Paddle {
     this.moveSpeed = CONFIG.paddle.moveSpeed;
   }
 
-  setMouseTarget(clientX, canvasWidth) {
-    const mouseX = (clientX / canvasWidth) * 2 - 1;
-    // Scale up to compensate for 45° camera angle (court X appears narrower on screen)
-    this.targetX = mouseX * (CONFIG.court.width / 2) * 1.4;
+  /**
+   * @param {number} worldX - target x in court coordinates (already unprojected)
+   */
+  setWorldTarget(worldX) {
+    this.targetX = worldX;
   }
 
   setKey(key, pressed) {

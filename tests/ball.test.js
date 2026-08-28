@@ -2,6 +2,36 @@ import { describe, it, expect } from 'vitest';
 import { Ball } from '../src/game/Ball.js';
 import { CONFIG } from '../src/config.js';
 
+describe('Ball serve aim', () => {
+  it('reset with aimX uses aimed angle instead of random', () => {
+    const ball = new Ball();
+    ball.reset(1, 0);
+    expect(ball.vx).toBeCloseTo(0);
+    expect(ball.vz).toBeGreaterThan(0);
+
+    ball.reset(1, 1);
+    expect(ball.vx).toBeGreaterThan(0);
+    const expectedAngle = CONFIG.serve.maxAimAngle;
+    expect(Math.atan2(ball.vx, ball.vz)).toBeCloseTo(expectedAngle);
+
+    ball.reset(-1, -1);
+    expect(ball.vx).toBeLessThan(0);
+  });
+
+  it('aimX is clamped to [-1, 1]', () => {
+    const ball = new Ball();
+    ball.reset(1, 5);
+    expect(Math.atan2(ball.vx, ball.vz)).toBeCloseTo(CONFIG.serve.maxAimAngle);
+  });
+
+  it('reset without aimX keeps small random spread', () => {
+    const ball = new Ball();
+    ball.reset(1);
+    expect(Math.abs(Math.atan2(ball.vx, ball.vz))).toBeLessThanOrEqual(0.2 + 1e-9);
+  });
+});
+import { CONFIG } from '../src/config.js';
+
 describe('Ball', () => {
   it('initializes at center, inactive', () => {
     const ball = new Ball();

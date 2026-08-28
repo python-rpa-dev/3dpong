@@ -27,6 +27,20 @@ export class Camera {
     }
   }
 
+  /**
+   * Convert a screen point to the world x where the view ray crosses z = planeZ.
+   */
+  screenToWorldX(clientX, clientY, width, height, planeZ) {
+    const ndcX = (clientX / width) * 2 - 1;
+    const ndcY = -(clientY / height) * 2 + 1;
+    const point = new THREE.Vector3(ndcX, ndcY, 0.5).unproject(this.camera);
+    const dir = point.sub(this.camera.position);
+    if (Math.abs(dir.z) < 1e-6) return 0;
+    const t = (planeZ - this.camera.position.z) / dir.z;
+    if (t <= 0) return 0;
+    return this.camera.position.x + dir.x * t;
+  }
+
   update() {
     // Reserved for future camera animation
   }

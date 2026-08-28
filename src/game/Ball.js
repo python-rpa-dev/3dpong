@@ -14,13 +14,15 @@ export class Ball {
     this.speedMultiplier = 1;
   }
 
-  reset(direction) {
+  reset(direction, aimX = null) {
     this.x = 0;
     this.z = 0;
     this.speed = this.baseSpeed;
     this.speedMultiplier = 1;
     this.rallyHits = 0;
-    const angle = (Math.random() - 0.5) * 0.4;
+    const angle = aimX === null
+      ? (Math.random() - 0.5) * 0.4
+      : Math.max(-1, Math.min(1, aimX)) * CONFIG.serve.maxAimAngle;
     this.vx = Math.sin(angle) * this.speed;
     this.vz = Math.cos(angle) * this.speed * direction;
     this.active = true;
