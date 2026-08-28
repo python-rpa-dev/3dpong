@@ -113,6 +113,7 @@ function gameLoop(time) {
         effects.spawnParticles(evt.x, 1, evt.z, color, CONFIG.effects.scoreParticles * 2, 5);
         effects.triggerShake(CONFIG.effects.scoreShake * 1.5, CONFIG.effects.scoreShakeDuration);
         effects.triggerScreenFlash(isPlayer ? color : 0xff0044, 0.3);
+        camera.punch(0.06);
         break;
       }
     }
@@ -137,6 +138,7 @@ function gameLoop(time) {
 
   // Apply screen shake to camera
   camera.applyShake(effects.shakeOffset);
+  camera.update(dt);
 
   // Render
   scene.render(camera.camera);

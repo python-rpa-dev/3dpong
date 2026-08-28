@@ -15,6 +15,13 @@ export class Camera {
     this.camera.lookAt(lookAt.x, lookAt.y, lookAt.z);
     this.basePosition = new THREE.Vector3(position.x, position.y, position.z);
     this.baseTarget = new THREE.Vector3(lookAt.x, lookAt.y, lookAt.z);
+    this.baseFov = fov;
+    this.punchAmount = 0;
+  }
+
+  /** Quick FOV punch-in on big moments (amount ~0.05-0.1). */
+  punch(amount) {
+    this.punchAmount = Math.max(this.punchAmount, amount);
   }
 
   applyShake(offset) {
@@ -41,7 +48,15 @@ export class Camera {
     return this.camera.position.x + dir.x * t;
   }
 
-  update() {
-    // Reserved for future camera animation
+  update(dt = 1 / 60) {
+    if (this.punchAmount > 0.001) {
+      this.punchAmount *= Math.exp(-dt * 8);
+      this.camera.fov = this.baseFov * (1 - this.punchAmount);
+      this.camera.updateProjectionMatrix();
+    } else if (this.camera.fov !== this.baseFov) {
+      this.punchAmount = 0;
+      this.camera.fov = this.baseFov;
+      this.camera.updateProjectionMatrix();
+    }
   }
 }

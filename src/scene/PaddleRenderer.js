@@ -6,6 +6,8 @@ export class PaddleRenderer {
     this.scene = scene;
     this.playerFlash = 0;
     this.aiFlash = 0;
+    this.playerPop = 0;
+    this.aiPop = 0;
 
     // Player paddle (cyan)
     this.playerMesh = this.createPaddleMesh(CONFIG.colors.playerPaddle);
@@ -35,10 +37,12 @@ export class PaddleRenderer {
 
   flashPlayer() {
     this.playerFlash = 1.0;
+    this.playerPop = 1.0;
   }
 
   flashAI() {
     this.aiFlash = 1.0;
+    this.aiPop = 1.0;
   }
 
   update(playerPaddle, aiPaddle, dt) {
@@ -54,11 +58,15 @@ export class PaddleRenderer {
       aiPaddle.z
     );
 
-    // Width scaling from powerup effects
+    // Width scaling from powerup effects + impact pop (squash/stretch on hit)
     const pw = (playerPaddle.width || CONFIG.paddle.width) / CONFIG.paddle.width;
     const aw = (aiPaddle.width || CONFIG.paddle.width) / CONFIG.paddle.width;
-    this.playerMesh.scale.set(pw, 1, 1);
-    this.aiMesh.scale.set(aw, 1, 1);
+    this.playerPop = Math.max(0, this.playerPop - dt * 6);
+    this.aiPop = Math.max(0, this.aiPop - dt * 6);
+    const pPop = 1 + this.playerPop * 0.35;
+    const aPop = 1 + this.aiPop * 0.35;
+    this.playerMesh.scale.set(pw * (1 + this.playerPop * 0.15), pPop, 1 + this.playerPop * 0.25);
+    this.aiMesh.scale.set(aw * (1 + this.aiPop * 0.15), aPop, 1 + this.aiPop * 0.25);
 
     // Flash decay
     if (this.playerFlash > 0) {
