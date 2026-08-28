@@ -6,6 +6,7 @@ import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
 import { pickPersonality } from './AIPersonality.js';
 import { pickBoss, BOSS_TUNING } from './Boss.js';
+import { mulberry32, dailySeed } from './rng.js';
 import { CONFIG } from '../config.js';
 
 const STATES = {
@@ -53,6 +54,7 @@ export class Game {
     this._minMargin = 0;
     this.boss = null;
     this._bossTimer = 0;
+    this.rng = Math.random;
   }
 
   isFunMode() {
@@ -106,7 +108,7 @@ export class Game {
   spawnExtraBall(awayFrom) {
     const dir = awayFrom === 'player' ? 1 : -1;
     const extra = new Ball();
-    extra.reset(dir);
+    extra.reset(dir, null, this.rng);
     const f = CONFIG.fun.extraBallSpeedFactor;
     extra.vx *= f;
     extra.vz *= f;
@@ -201,6 +203,9 @@ export class Game {
     this._minMargin = 0;
     this.boss = this.settings.get('gameMode') === 'boss' ? pickBoss() : null;
     this._bossTimer = 0;
+    this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
+    this.powerups.rng = this.rng;
+    if (this.aiPaddle.rng) this.aiPaddle.rng = this.rng;
     this.score.winScore = this.settings.get('winScore');
     this.score.deuce = this.settings.get('deuce');
     this.score.reset();
@@ -212,7 +217,7 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.powerups.reset();
-    this.serveDirection = Math.random() > 0.5 ? 1 : -1;
+    this.serveDirection = this.rng() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
     this.events.length = 0;
@@ -255,7 +260,7 @@ export class Game {
       case STATES.SERVE:
         this.serveTimer -= dt;
         if (this.serveTimer <= 0) {
-          this.ball.reset(this.serveDirection, this.currentServeAim());
+          this.ball.reset(this.serveDirection, this.currentServeAim(), this.rng);
           this.state = STATES.PLAYING;
         }
         break;
@@ -298,7 +303,7 @@ export class Game {
             }
           } else {
             this.balls.length = 1;
-            this.ball.reset(this.serveDirection);
+            this.ball.reset(this.serveDirection, null, this.rng);
             this.rallyCombo = 0;
             this.state = STATES.SERVE;
             this.serveTimer = CONFIG.serve.delay;
@@ -321,8 +326,8 @@ export class Game {
 
       // Net graze: rare lucky/unlucky deflection when crossing the net line
       if (this.netGrazeEnabled() && ball.crossedNet()
-          && Math.random() < CONFIG.fun.netGrazeChance) {
-        const nudge = 1 + (Math.random() - 0.5) * 2 * CONFIG.fun.netGrazeNudge;
+          && this.rng() < CONFIG.fun.netGrazeChance) {
+        const nudge = 1 + (this.rng() - 0.5) * 2 * CONFIG.fun.netGrazeNudge;
         ball.vx *= nudge;
         this._grazes++;
         if (this.achievementsEnabled() && this._grazes >= 3) this.tryUnlock('grazer_3');

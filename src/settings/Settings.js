@@ -15,6 +15,7 @@ const DEFAULTS = {
   catchMode: false,
   music: true,
   gamepad: true,
+  dailyChallenge: false,
 };
 
 export class Settings {

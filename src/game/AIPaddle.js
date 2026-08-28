@@ -13,6 +13,7 @@ export class AIPaddle extends Paddle {
     this.targetX = 0;
     this.lastUpdate = 0;
     this.time = 0;
+    this.rng = Math.random;
   }
 
   setDifficulty(difficulty) {
@@ -58,11 +59,11 @@ export class AIPaddle extends Paddle {
           }
 
           // Add error (grows with combo)
-          const error = (Math.random() - 0.5) * 2 * effectiveError * halfWidth;
+          const error = (this.rng() - 0.5) * 2 * effectiveError * halfWidth;
 
           // Panic chance on long rallies: AI moves wrong direction
           const panicChance = Math.min(rallyCombo * 0.03, 0.25);
-          if (Math.random() < panicChance) {
+          if (this.rng() < panicChance) {
             this.targetX = -predictedX + error * 2;
           } else {
             this.targetX = predictedX + error;
