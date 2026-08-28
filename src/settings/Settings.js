@@ -10,6 +10,7 @@ const DEFAULTS = {
   multiBall: true,
   paddleShifts: true,
   aiTaunts: true,
+  bloom: true,
 };
 
 export class Settings {

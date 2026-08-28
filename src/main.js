@@ -40,6 +40,9 @@ function gameLoop(time) {
   lastTime = time;
 
   try {
+    if (scene.bloomEnabled !== settings.get('bloom')) {
+      scene.setBloom(settings.get('bloom'));
+    }
     game.update(dt);
 
     // Drain game events and trigger effects/sounds

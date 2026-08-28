@@ -65,6 +65,10 @@ export const CONFIG = {
     scoreDelay: 1.0,
     maxAimAngle: 0.5,
   },
+
+  postfx: {
+    bloom: { strength: 0.7, radius: 0.5, threshold: 0.82 },
+  },
   paddleShifts: {
     edgeThreshold: 0.65,
     centerThreshold: 0.2,
