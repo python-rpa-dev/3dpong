@@ -116,7 +116,7 @@ function gameLoop(time) {
   ballRenderer.update(game.balls, dt);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   powerupRenderer.update(game.powerups.active, dt);
-  aimIndicator.update(game.state === 'SERVE', game.serveAimX, game.serveDirection, dt);
+  aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);
   effects.update(dt);
 
   // Apply screen shake to camera

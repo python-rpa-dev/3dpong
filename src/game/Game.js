@@ -21,7 +21,9 @@ export class Game {
     this.settings = settings;
     this.balls = [new Ball()];
     this.playerPaddle = new PlayerPaddle();
-    this.aiPaddle = new AIPaddle(settings.get('difficulty'));
+    this.aiPaddle = settings.get('playerMode') === 'versus'
+      ? new PlayerPaddle(CONFIG.paddle.opponentZ)
+      : new AIPaddle(settings.get('difficulty'));
     this.score = new Score(settings.get('winScore'));
     this.court = new Court();
     this.powerups = new PowerupManager();
@@ -43,6 +45,26 @@ export class Game {
 
   isFunMode() {
     return this.settings.get('gameMode') === 'fun';
+  }
+
+  isVersus() {
+    return this.settings.get('playerMode') === 'versus';
+  }
+
+  opponentPaddle() {
+    return this.aiPaddle;
+  }
+
+  /**
+   * Effective serve aim for the upcoming serve: P1's mouse when the ball
+   * heads toward the AI side, P2's paddle position in versus otherwise.
+   */
+  currentServeAim() {
+    const halfWidth = CONFIG.court.width / 2;
+    if (this.isVersus() && this.serveDirection === -1) {
+      return Math.max(-1, Math.min(1, this.aiPaddle.x / halfWidth));
+    }
+    return this.serveAimX;
   }
 
   get ball() {
@@ -85,6 +107,12 @@ export class Game {
   }
 
   start() {
+    const versus = this.isVersus();
+    if (versus && !(this.aiPaddle instanceof PlayerPaddle)) {
+      this.aiPaddle = new PlayerPaddle(CONFIG.paddle.opponentZ);
+    } else if (!versus && !(this.aiPaddle instanceof AIPaddle)) {
+      this.aiPaddle = new AIPaddle(this.settings.get('difficulty'));
+    }
     this.score.reset();
     this.balls = [new Ball()];
     this.rallyCombo = 0;
@@ -134,7 +162,7 @@ export class Game {
       case STATES.SERVE:
         this.serveTimer -= dt;
         if (this.serveTimer <= 0) {
-          this.ball.reset(this.serveDirection, this.serveAimX);
+          this.ball.reset(this.serveDirection, this.currentServeAim());
           this.state = STATES.PLAYING;
         }
         break;

@@ -2,8 +2,8 @@ import { Paddle } from './Paddle.js';
 import { CONFIG } from '../config.js';
 
 export class PlayerPaddle extends Paddle {
-  constructor() {
-    super(CONFIG.paddle.playerZ);
+  constructor(z = CONFIG.paddle.playerZ) {
+    super(z);
     this.targetX = null;
     this.keys = { left: false, right: false };
     this.moveSpeed = CONFIG.paddle.moveSpeed;
