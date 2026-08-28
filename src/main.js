@@ -12,6 +12,7 @@ import { UI } from './ui/UI.js';
 import { Audio } from './audio/Audio.js';
 import { Settings } from './settings/Settings.js';
 import { Records } from './settings/Records.js';
+import { GamepadInput } from './input/GamepadInput.js';
 
 const canvas = document.getElementById('game-canvas');
 const settings = new Settings();
@@ -33,6 +34,8 @@ ui.setScreenToWorld((clientX, clientY) =>
   camera.screenToWorldX(clientX, clientY, window.innerWidth, window.innerHeight, CONFIG.paddle.playerZ)
 );
 
+const gamepadInput = new GamepadInput(game);
+
 let lastTime = performance.now();
 
 function gameLoop(time) {
@@ -43,6 +46,7 @@ function gameLoop(time) {
     if (scene.bloomEnabled !== settings.get('bloom')) {
       scene.setBloom(settings.get('bloom'));
     }
+    if (settings.get('gamepad')) gamepadInput.update(dt);
     game.update(dt);
 
     // Drain game events and trigger effects/sounds

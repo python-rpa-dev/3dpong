@@ -14,6 +14,7 @@ const DEFAULTS = {
   bloom: true,
   catchMode: false,
   music: true,
+  gamepad: true,
 };
 
 export class Settings {

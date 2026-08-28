@@ -36,6 +36,7 @@ export class UI {
     document.getElementById('setting-bloom').checked = settings.get('bloom');
     document.getElementById('setting-catchmode').checked = settings.get('catchMode');
     document.getElementById('setting-music').checked = settings.get('music');
+    document.getElementById('setting-gamepad').checked = settings.get('gamepad');
     this.updateFunSettingsVisibility();
 
     // Button handlers
@@ -113,6 +114,7 @@ export class UI {
     this.settings.set('bloom', document.getElementById('setting-bloom').checked);
     this.settings.set('catchMode', document.getElementById('setting-catchmode').checked);
     this.settings.set('music', document.getElementById('setting-music').checked);
+    this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
     this.settings.save();
 
     this.showMenu();
