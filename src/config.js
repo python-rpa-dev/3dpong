@@ -59,6 +59,13 @@ export const CONFIG = {
     delay: 0.8,
     scoreDelay: 1.0,
   },
+  paddleShifts: {
+    edgeThreshold: 0.65,
+    centerThreshold: 0.2,
+    shrinkScale: 0.72,
+    growScale: 1.28,
+    duration: 3,
+  },
   powerups: {
     spawnMinDelay: 5,
     spawnMaxDelay: 9,

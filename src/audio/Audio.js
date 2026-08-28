@@ -116,6 +116,30 @@ export class Audio {
     });
   }
 
+  playPaddleShift(mode) {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.type = 'sawtooth';
+    // shrink: downward sweep, grow: upward sweep
+    const t0 = this.ctx.currentTime;
+    if (mode === 'shrink') {
+      osc.frequency.setValueAtTime(300, t0);
+      osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.15);
+    } else {
+      osc.frequency.setValueAtTime(150, t0);
+      osc.frequency.exponentialRampToValueAtTime(380, t0 + 0.15);
+    }
+    gain.gain.setValueAtTime(0.1, t0);
+    gain.gain.exponentialRampToValueAtTime(0.01, t0 + 0.15);
+    osc.start(t0);
+    osc.stop(t0 + 0.15);
+  }
+
   playMultiBall() {
     if (!this.enabled) return;
     this._ensureContext();

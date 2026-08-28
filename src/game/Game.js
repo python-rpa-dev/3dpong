@@ -181,6 +181,7 @@ export class Game {
         this.rallyCombo++;
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'player';
+        this.applyPaddleShift('player', playerHit.offset);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
       }
 
@@ -191,6 +192,7 @@ export class Game {
         this.rallyCombo++;
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'ai';
+        this.applyPaddleShift('ai', aiHit.offset);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
       }
 
@@ -232,14 +234,45 @@ export class Game {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;
       const duration = type === 'wide' ? cfg.durationWide : cfg.durationShrink;
+      const scale = type === 'wide' ? cfg.wideScale : cfg.shrinkScale;
       // Replace any existing effect of this pair on the same paddle
       this.activeEffects = this.activeEffects.filter(
         e => !(e.target === affected && (e.type === 'wide' || e.type === 'shrink'))
       );
-      this.activeEffects.push({ type, target: affected, timeLeft: duration });
+      this.activeEffects.push({ type, target: affected, scale, timeLeft: duration });
     }
 
     this.events.push({ type: 'powerup', puType: type, target });
+    this.applyModifiers();
+  }
+
+  shiftsEnabled() {
+    return this.isFunMode() && this.settings.get('paddleShifts');
+  }
+
+  /**
+   * Paddle shifts: edge hits shrink the opponent's paddle, center hits grow it.
+   * @param {string} hitter - 'player' | 'ai'
+   * @param {number} offset - hit offset -1..1 (|offset| near 1 = edge)
+   */
+  applyPaddleShift(hitter, offset) {
+    if (!this.shiftsEnabled()) return;
+    const cfg = CONFIG.paddleShifts;
+    const abs = Math.abs(offset);
+    let scale = null;
+    if (abs >= cfg.edgeThreshold) scale = cfg.shrinkScale;
+    else if (abs <= cfg.centerThreshold) scale = cfg.growScale;
+    if (scale === null) return;
+
+    const affected = hitter === 'player' ? 'ai' : 'player';
+    // One shift per paddle at a time; freshest wins
+    this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shift' && e.target === affected));
+    this.activeEffects.push({ type: 'shift', target: affected, scale, timeLeft: cfg.duration });
+    this.events.push({
+      type: 'paddleShift',
+      affected,
+      mode: scale < 1 ? 'shrink' : 'grow',
+    });
     this.applyModifiers();
   }
 
@@ -267,16 +300,20 @@ export class Game {
 
   applyModifiers() {
     const cfg = CONFIG.powerups;
-    let widePlayer = false, wideAi = false, shrinkPlayer = false, shrinkAi = false, slowmo = false;
+    let slowmo = false;
+    let playerMult = 1;
+    let aiMult = 1;
     for (const e of this.activeEffects) {
-      if (e.type === 'wide') { if (e.target === 'player') widePlayer = true; else wideAi = true; }
-      if (e.type === 'shrink') { if (e.target === 'player') shrinkPlayer = true; else shrinkAi = true; }
-      if (e.type === 'slowmo') slowmo = true;
+      if (e.type === 'slowmo') { slowmo = true; continue; }
+      if (e.scale !== undefined) {
+        if (e.target === 'player') playerMult *= e.scale;
+        else if (e.target === 'ai') aiMult *= e.scale;
+      }
     }
-    const scaleFor = (shrunk, widened) =>
-      shrunk ? cfg.shrinkScale : (widened ? cfg.wideScale : 1);
-    this.playerPaddle.width = this.playerPaddle.baseWidth * scaleFor(shrinkPlayer, widePlayer);
-    this.aiPaddle.width = this.aiPaddle.baseWidth * scaleFor(shrinkAi, wideAi);
+    // Clamp so stacked effects never produce absurd paddles
+    const clamp = (m) => Math.max(0.5, Math.min(2, m));
+    this.playerPaddle.width = this.playerPaddle.baseWidth * clamp(playerMult);
+    this.aiPaddle.width = this.aiPaddle.baseWidth * clamp(aiMult);
     this.timeScale = slowmo ? cfg.slowmoScale : 1;
   }
 

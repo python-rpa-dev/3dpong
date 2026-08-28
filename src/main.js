@@ -61,6 +61,13 @@ function gameLoop(time) {
         }
         break;
       }
+      case 'paddleShift': {
+        audio.playPaddleShift(evt.mode);
+        const paddle = evt.affected === 'player' ? game.playerPaddle : game.aiPaddle;
+        const shiftColor = evt.mode === 'shrink' ? 0xff2d95 : 0x00ff88;
+        effects.spawnParticles(paddle.x, 1, paddle.z, shiftColor, 12, 3);
+        break;
+      }
       case 'multiBallSpawn':
         audio.playMultiBall();
         effects.spawnParticles(evt.x, 1, evt.z, 0x00ff88, 24, 5);
