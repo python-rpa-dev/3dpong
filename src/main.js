@@ -57,7 +57,7 @@ function gameLoop(time) {
         break;
       case 'paddleHit': {
         const speed = game.ball.currentSpeed;
-        audio.playPaddleHit(speed);
+        audio.playPaddleHit(speed, evt.combo || 0);
         ballRenderer.triggerSquash('z');
         const color = evt.who === 'player' ? CONFIG.colors.playerPaddle : CONFIG.colors.opponentPaddle;
         const combo = evt.combo || 1;

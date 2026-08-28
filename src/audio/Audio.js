@@ -13,7 +13,7 @@ export class Audio {
     }
   }
 
-  playPaddleHit(speed) {
+  playPaddleHit(speed, combo = 0) {
     if (!this.enabled) return;
     this._ensureContext();
     if (!this.ctx) return;
@@ -22,7 +22,9 @@ export class Audio {
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.type = 'sine';
-    osc.frequency.value = 200 + (speed / 40) * 400;
+    // Rally ramp: pitch climbs ~semitone-ish per hit, capped so it stays pleasant
+    const comboStep = Math.min(combo, 16) * 22;
+    osc.frequency.value = 200 + (speed / 40) * 400 + comboStep;
     gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
     osc.start();
