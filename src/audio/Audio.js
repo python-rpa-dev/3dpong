@@ -67,6 +67,29 @@ export class Audio {
     osc.stop(this.ctx.currentTime + 0.3);
   }
 
+  playComboMilestone(combo) {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    // Rising major arpeggio, pitch climbs with each milestone (5, 10, 15, ...)
+    const milestone = Math.max(1, Math.floor(combo / 5));
+    const root = 440 * Math.pow(2, Math.min(milestone - 1, 4) / 12);
+    const intervals = [1, 1.25, 1.5, 2];
+    intervals.forEach((ratio, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = root * ratio;
+      const t = this.ctx.currentTime + i * 0.06;
+      gain.gain.setValueAtTime(0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.start(t);
+      osc.stop(t + 0.15);
+    });
+  }
+
   playWin() {
     if (!this.enabled) return;
     this._ensureContext();
