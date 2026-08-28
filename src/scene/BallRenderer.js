@@ -55,13 +55,50 @@ export class BallRenderer {
       scene.add(extraMesh);
       const extraLight = new THREE.PointLight(CONFIG.colors.ball, 0.8, 4);
       scene.add(extraLight);
-      this.extraViews.push({ mesh: extraMesh, light: extraLight });
+      this.extraViews.push({ mesh: extraMesh, light: extraLight, shadow: this.createShadow(scene) });
     }
+
+    // Ground shadow for primary ball
+    this.shadow = this.createShadow(scene);
+
+    // Squash & stretch state
+    this.squash = 0;
+    this.squashAxis = 'z';
   }
 
-  update(balls) {
+  createShadow(scene) {
+    const geo = new THREE.CircleGeometry(CONFIG.ball.radius * 1.4, 24);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.35,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = 0.02;
+    mesh.visible = false;
+    scene.add(mesh);
+    return mesh;
+  }
+
+  /**
+   * Trigger a squash deformation on bounce.
+   * @param {'x'|'z'} axis - collision normal axis
+   */
+  triggerSquash(axis) {
+    this.squash = 1;
+    this.squashAxis = axis;
+  }
+
+  update(balls, dt = 1 / 60) {
     if (!Array.isArray(balls)) balls = [balls];
     const primary = balls[0];
+
+    // Decay squash & stretch
+    this.squash = Math.max(0, this.squash - dt * 6);
+    const s = this.squash;
+    const axisZ = this.squashAxis === 'z';
 
     for (let i = 1; i < this.extraViews.length + 1; i++) {
       const view = this.extraViews[i - 1];
@@ -69,12 +106,15 @@ export class BallRenderer {
       if (!ball || !ball.active) {
         view.mesh.visible = false;
         view.light.intensity = 0;
+        view.shadow.visible = false;
         continue;
       }
       view.mesh.visible = true;
       view.mesh.position.set(ball.x, ball.radius, ball.z);
       view.light.position.set(ball.x, ball.radius + 0.5, ball.z);
       view.light.intensity = 1;
+      view.shadow.visible = true;
+      view.shadow.position.set(ball.x, 0.02, ball.z);
     }
 
     const ball = primary;
@@ -82,15 +122,31 @@ export class BallRenderer {
     this.mesh.position.set(ball.x, y, ball.z);
     this.light.position.set(ball.x, y + 0.5, ball.z);
 
+    // Squash on impact: flatten along collision normal, bulge perpendicular
+    const flat = 1 - s * 0.4;
+    const bulge = 1 + s * 0.25;
+    this.mesh.scale.set(
+      axisZ ? bulge : flat,
+      bulge,
+      axisZ ? flat : bulge
+    );
+
     if (!ball.active) {
       this.mesh.visible = false;
       this.light.intensity = 0;
+      this.shadow.visible = false;
       this.trailPositions = [];
       this.trailMeshes.forEach(m => m.visible = false);
       return;
     }
 
     this.mesh.visible = true;
+
+    // Ground shadow tracks the ball, swells slightly during squash
+    this.shadow.visible = true;
+    this.shadow.position.set(ball.x, 0.02, ball.z);
+    const shadowScale = 1 + s * 0.35;
+    this.shadow.scale.set(shadowScale, shadowScale, 1);
 
     // Color shifts with speed: yellow → orange → red → white
     const speedRatio = Math.min(ball.currentSpeed / CONFIG.ball.maxSpeed, 1);
@@ -141,6 +197,9 @@ export class BallRenderer {
   reset() {
     this.trailPositions = [];
     this.lastTrailPos = null;
+    this.squash = 0;
     this.trailMeshes.forEach(m => m.visible = false);
+    if (this.shadow) this.shadow.visible = false;
+    this.extraViews.forEach(v => { v.mesh.visible = false; v.shadow.visible = false; });
   }
 }

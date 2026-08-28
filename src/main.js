@@ -39,12 +39,14 @@ function gameLoop(time) {
     switch (evt.type) {
       case 'wallBounce':
         audio.playWallBounce();
+        ballRenderer.triggerSquash('x');
         effects.spawnParticles(evt.x, 0.5, evt.z, 0xffffff, 6, 2);
         effects.triggerShake(CONFIG.effects.hitShake, CONFIG.effects.hitShakeDuration);
         break;
       case 'paddleHit': {
         const speed = game.ball.currentSpeed;
         audio.playPaddleHit(speed);
+        ballRenderer.triggerSquash('z');
         const color = evt.who === 'player' ? CONFIG.colors.playerPaddle : CONFIG.colors.opponentPaddle;
         const combo = evt.combo || 1;
         const particleCount = CONFIG.effects.hitParticles + Math.min(combo * 2, 20);
@@ -105,7 +107,7 @@ function gameLoop(time) {
   }
 
   // Update renderers
-  ballRenderer.update(game.balls);
+  ballRenderer.update(game.balls, dt);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   powerupRenderer.update(game.powerups.active, dt);
   effects.update(dt);
