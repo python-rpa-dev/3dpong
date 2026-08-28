@@ -12,11 +12,10 @@ describe('PowerupManager', () => {
   it('spawns a powerup after the spawn delay elapses', () => {
     const rng = (() => { let i = 0; return () => [0.5, 0.5, 0.5][i++ % 3]; })();
     const mgr = new PowerupManager(rng);
-    const ball = { active: true, x: 0, z: 0, radius: CONFIG.ball.radius, vz: 1 };
     expect(mgr.active.length).toBe(0);
     let t = 0;
     while (mgr.active.length === 0 && t < 20) {
-      mgr.update(0.1, ball, null);
+      mgr.update(0.1);
       t += 0.1;
     }
     expect(mgr.active.length).toBe(1);
@@ -27,7 +26,7 @@ describe('PowerupManager', () => {
     const mgr = new PowerupManager();
     mgr.active.push({ x: 3, z: 2, type: 'wide' });
     const ball = { active: true, x: 3.2, z: 2, radius: CONFIG.ball.radius, vz: 1 };
-    const collected = mgr.update(0.016, ball, 'player');
+    const collected = mgr.checkPickups(ball, 'player');
     expect(collected).toEqual([{ type: 'wide', target: 'player' }]);
     expect(mgr.active.length).toBe(0);
   });
@@ -36,7 +35,7 @@ describe('PowerupManager', () => {
     const mgr = new PowerupManager();
     mgr.active.push({ x: 0, z: 0, type: 'shrink' });
     const ball = { active: true, x: 0, z: 0, radius: CONFIG.ball.radius, vz: -1 };
-    const collected = mgr.update(0.016, ball, null);
+    const collected = mgr.checkPickups(ball, null);
     expect(collected[0].target).toBe('ai');
   });
 
@@ -44,7 +43,7 @@ describe('PowerupManager', () => {
     const mgr = new PowerupManager();
     mgr.active.push({ x: 0, z: 0, type: 'wide' });
     const ball = { active: false, x: 0, z: 0, radius: CONFIG.ball.radius, vz: 1 };
-    const collected = mgr.update(0.016, ball, 'player');
+    const collected = mgr.checkPickups(ball, 'player');
     expect(collected.length).toBe(0);
   });
 

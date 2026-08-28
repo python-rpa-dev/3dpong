@@ -38,9 +38,46 @@ export class BallRenderer {
       scene.add(trailMesh);
       this.trailMeshes.push(trailMesh);
     }
+
+    // Extra ball views (multi-ball): simple sphere + light, no trail
+    this.extraViews = [];
+    for (let i = 0; i < 2; i++) {
+      const extraGeo = new THREE.SphereGeometry(CONFIG.ball.radius, 24, 24);
+      const extraMat = new THREE.MeshStandardMaterial({
+        color: CONFIG.colors.ball,
+        emissive: CONFIG.colors.ball,
+        emissiveIntensity: 0.5,
+        roughness: 0.3,
+        metalness: 0.1,
+      });
+      const extraMesh = new THREE.Mesh(extraGeo, extraMat);
+      extraMesh.visible = false;
+      scene.add(extraMesh);
+      const extraLight = new THREE.PointLight(CONFIG.colors.ball, 0.8, 4);
+      scene.add(extraLight);
+      this.extraViews.push({ mesh: extraMesh, light: extraLight });
+    }
   }
 
-  update(ball) {
+  update(balls) {
+    if (!Array.isArray(balls)) balls = [balls];
+    const primary = balls[0];
+
+    for (let i = 1; i < this.extraViews.length + 1; i++) {
+      const view = this.extraViews[i - 1];
+      const ball = balls[i];
+      if (!ball || !ball.active) {
+        view.mesh.visible = false;
+        view.light.intensity = 0;
+        continue;
+      }
+      view.mesh.visible = true;
+      view.mesh.position.set(ball.x, ball.radius, ball.z);
+      view.light.position.set(ball.x, ball.radius + 0.5, ball.z);
+      view.light.intensity = 1;
+    }
+
+    const ball = primary;
     const y = ball.radius;
     this.mesh.position.set(ball.x, y, ball.z);
     this.light.position.set(ball.x, y + 0.5, ball.z);

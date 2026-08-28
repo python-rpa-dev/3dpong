@@ -177,8 +177,9 @@ export class UI {
       shrink: 'OPPONENT SHRUNK!',
       slowmo: 'SLOW-MO!',
       double: 'DOUBLE POINTS!',
+      multi: 'MULTI-BALL!',
     };
-    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00' };
+    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', multi: '#00ff88' };
     let text = labels[puType] || 'POWER-UP!';
     if ((puType === 'shrink' || puType === 'double') && target === 'ai') {
       text = puType === 'shrink' ? 'YOUR PADDLE SHRANK!' : 'AI DOUBLE POINTS!';

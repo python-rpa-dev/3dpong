@@ -61,6 +61,12 @@ function gameLoop(time) {
         }
         break;
       }
+      case 'multiBallSpawn':
+        audio.playMultiBall();
+        effects.spawnParticles(evt.x, 1, evt.z, 0x00ff88, 24, 5);
+        effects.triggerShake(2, 0.15);
+        ui.showPowerupToast('multi', evt.target);
+        break;
       case 'powerup': {
         const puColor = CONFIG.powerups.colors[evt.puType] || 0xffffff;
         audio.playPowerup(evt.puType);
@@ -92,7 +98,7 @@ function gameLoop(time) {
   }
 
   // Update renderers
-  ballRenderer.update(game.ball);
+  ballRenderer.update(game.balls);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   powerupRenderer.update(game.powerups.active, dt);
   effects.update(dt);

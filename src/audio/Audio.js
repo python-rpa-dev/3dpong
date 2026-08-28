@@ -116,6 +116,27 @@ export class Audio {
     });
   }
 
+  playMultiBall() {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    // Quick rising double-blip signaling a second ball
+    const notes = [660, 880, 1320];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const t = this.ctx.currentTime + i * 0.05;
+      gain.gain.setValueAtTime(0.14, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    });
+  }
+
   playWin() {
     if (!this.enabled) return;
     this._ensureContext();
