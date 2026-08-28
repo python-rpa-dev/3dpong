@@ -90,6 +90,32 @@ export class Audio {
     });
   }
 
+  playPowerup(puType) {
+    if (!this.enabled) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    const freqs = {
+      wide: [523, 784],
+      shrink: [392, 262],
+      slowmo: [660, 330, 165],
+      double: [523, 523, 784],
+    };
+    const notes = freqs[puType] || [440];
+    notes.forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = this.ctx.currentTime + i * 0.07;
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    });
+  }
+
   playWin() {
     if (!this.enabled) return;
     this._ensureContext();

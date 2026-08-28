@@ -13,9 +13,9 @@ export class Score {
     this.opponentScore = 0;
   }
 
-  addPoint(who) {
-    if (who === 'player') this.playerScore++;
-    else this.opponentScore++;
+  addPoint(who, amount = 1) {
+    if (who === 'player') this.playerScore += amount;
+    else this.opponentScore += amount;
   }
 
   isDeuce() {

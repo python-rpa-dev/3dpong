@@ -16,6 +16,7 @@ export class UI {
     this.settingsScreen = document.getElementById('settings-screen');
     this.gameoverText = document.getElementById('gameover-text');
     this.finalScoreEl = document.getElementById('final-score');
+    this.powerupToastEl = document.getElementById('powerup-toast');
 
     // Load settings into selects
     document.getElementById('setting-difficulty').value = settings.get('difficulty');
@@ -168,6 +169,30 @@ export class UI {
       this.playerScoreEl.textContent = this.game.score.playerScore;
       this.opponentScoreEl.textContent = this.game.score.opponentScore;
     }
+  }
+
+  showPowerupToast(puType, target) {
+    const labels = {
+      wide: 'PADDLE BOOST!',
+      shrink: 'OPPONENT SHRUNK!',
+      slowmo: 'SLOW-MO!',
+      double: 'DOUBLE POINTS!',
+    };
+    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00' };
+    let text = labels[puType] || 'POWER-UP!';
+    if ((puType === 'shrink' || puType === 'double') && target === 'ai') {
+      text = puType === 'shrink' ? 'YOUR PADDLE SHRANK!' : 'AI DOUBLE POINTS!';
+    }
+    this.powerupToastEl.textContent = text;
+    this.powerupToastEl.style.color = colors[puType] || '#ffffff';
+    // Restart the CSS animation
+    this.powerupToastEl.classList.add('hidden');
+    void this.powerupToastEl.offsetWidth;
+    this.powerupToastEl.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      this.powerupToastEl.classList.add('hidden');
+    }, 1600);
   }
 
   onKeyDown(e) {

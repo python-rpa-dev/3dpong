@@ -4,6 +4,7 @@ import { Camera } from './scene/Camera.js';
 import { CourtRenderer } from './scene/CourtRenderer.js';
 import { BallRenderer } from './scene/BallRenderer.js';
 import { PaddleRenderer } from './scene/PaddleRenderer.js';
+import { PowerupRenderer } from './scene/PowerupRenderer.js';
 import { Effects } from './scene/Effects.js';
 import { Game } from './game/Game.js';
 import { UI } from './ui/UI.js';
@@ -18,6 +19,7 @@ const camera = new Camera();
 const courtRenderer = new CourtRenderer(scene.scene);
 const ballRenderer = new BallRenderer(scene.scene);
 const paddleRenderer = new PaddleRenderer(scene.scene);
+const powerupRenderer = new PowerupRenderer(scene.scene);
 const effects = new Effects(scene.scene);
 const game = new Game(settings);
 const ui = new UI(game, settings);
@@ -59,6 +61,14 @@ function gameLoop(time) {
         }
         break;
       }
+      case 'powerup': {
+        const puColor = CONFIG.powerups.colors[evt.puType] || 0xffffff;
+        audio.playPowerup(evt.puType);
+        effects.spawnParticles(game.ball.x, 1, game.ball.z, puColor, 20, 4);
+        effects.triggerShake(1.5, 0.15);
+        ui.showPowerupToast(evt.puType, evt.target);
+        break;
+      }
       case 'score': {
         const isPlayer = evt.who === 'player';
         audio.playScore(isPlayer);
@@ -84,6 +94,7 @@ function gameLoop(time) {
   // Update renderers
   ballRenderer.update(game.ball);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
+  powerupRenderer.update(game.powerups.active, dt);
   effects.update(dt);
 
   // Apply screen shake to camera

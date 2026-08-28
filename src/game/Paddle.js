@@ -4,6 +4,7 @@ export class Paddle {
   constructor(z) {
     this.x = 0;
     this.z = z;
+    this.baseWidth = CONFIG.paddle.width;
     this.width = CONFIG.paddle.width;
     this.depth = CONFIG.paddle.depth;
     this.height = CONFIG.paddle.height;
