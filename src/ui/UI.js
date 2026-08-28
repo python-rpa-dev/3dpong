@@ -29,6 +29,7 @@ export class UI {
     document.getElementById('setting-multiball').checked = settings.get('multiBall');
     document.getElementById('setting-paddleshifts').checked = settings.get('paddleShifts');
     document.getElementById('setting-aitaunts').checked = settings.get('aiTaunts');
+    document.getElementById('setting-netgraze').checked = settings.get('netGraze');
     document.getElementById('setting-bloom').checked = settings.get('bloom');
     this.updateFunSettingsVisibility();
 
@@ -103,6 +104,7 @@ export class UI {
     this.settings.set('multiBall', multiBall);
     this.settings.set('paddleShifts', paddleShifts);
     this.settings.set('aiTaunts', document.getElementById('setting-aitaunts').checked);
+    this.settings.set('netGraze', document.getElementById('setting-netgraze').checked);
     this.settings.set('bloom', document.getElementById('setting-bloom').checked);
     this.settings.save();
 

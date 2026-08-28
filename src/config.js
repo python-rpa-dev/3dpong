@@ -98,6 +98,8 @@ export const CONFIG = {
     maxSpeedMultiplier: 2.5,
     multiBallCombo: 10,
     tauntImpressedCombo: 8,
+    netGrazeChance: 0.12,
+    netGrazeNudge: 0.15,
     extraBallSpeedFactor: 0.85,
     comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
   },

@@ -116,6 +116,10 @@ export class Game {
     return !this.isVersus() && this.isFunMode() && !!this.personality && this.settings.get('aiTaunts');
   }
 
+  netGrazeEnabled() {
+    return this.isFunMode() && this.settings.get('netGraze');
+  }
+
   emitTaunt(list) {
     const text = list[Math.floor(Math.random() * list.length)];
     this.events.push({ type: 'taunt', text });
@@ -251,6 +255,14 @@ export class Game {
       // Wall bounces
       if (this.court.checkWallBounce(ball)) {
         this.events.push({ type: 'wallBounce', x: ball.x, z: ball.z });
+      }
+
+      // Net graze: rare lucky/unlucky deflection when crossing the net line
+      if (this.netGrazeEnabled() && ball.crossedNet()
+          && Math.random() < CONFIG.fun.netGrazeChance) {
+        const nudge = 1 + (Math.random() - 0.5) * 2 * CONFIG.fun.netGrazeNudge;
+        ball.vx *= nudge;
+        this.events.push({ type: 'netGrazed', x: ball.x, z: 0 });
       }
 
       // Player paddle bounce

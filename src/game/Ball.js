@@ -17,6 +17,7 @@ export class Ball {
   reset(direction, aimX = null) {
     this.x = 0;
     this.z = 0;
+    this.prevZ = 0;
     this.speed = this.baseSpeed;
     this.speedMultiplier = 1;
     this.rallyHits = 0;
@@ -30,8 +31,14 @@ export class Ball {
 
   update(dt) {
     if (!this.active) return;
+    this.prevZ = this.z;
     this.x += this.vx * dt;
     this.z += this.vz * dt;
+  }
+
+  /** True on the frame the ball crosses the net line (z = 0). */
+  crossedNet() {
+    return this.active && this.prevZ !== 0 && this.z !== 0 && Math.sign(this.z) !== Math.sign(this.prevZ);
   }
 
   /**

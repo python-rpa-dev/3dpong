@@ -99,6 +99,10 @@ function gameLoop(time) {
       case 'record':
         ui.showRecord(evt.kind, evt.value);
         break;
+      case 'netGrazed':
+        audio.playNetGrazed();
+        effects.spawnParticles(evt.x, 0.6, evt.z, 0xffffee, 10, 2.5);
+        break;
       case 'taunt':
         ui.showTaunt(evt.text);
         break;
