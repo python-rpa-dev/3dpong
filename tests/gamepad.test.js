@@ -52,7 +52,8 @@ describe('GamepadInput', () => {
     const inputAi = new GamepadInput(ai);
     inputAi.setProvider(() => [{ axes: [] }, { axes: [1], buttons: [] }]);
     inputAi.update(1 / 60);
-    expect(ai.aiPaddle.targetX ?? null).toBeNull();
+    // AIPaddle keeps its own internal target (0 = center drift); the pad must not touch it
+    expect(ai.aiPaddle.targetX).toBe(0);
 
     const vs = new Game(makeSettings({ playerMode: 'versus' }));
     vs.start(); // swaps opponent to a PlayerPaddle
