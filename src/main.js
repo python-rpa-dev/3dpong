@@ -11,9 +11,11 @@ import { Game } from './game/Game.js';
 import { UI } from './ui/UI.js';
 import { Audio } from './audio/Audio.js';
 import { Settings } from './settings/Settings.js';
+import { Records } from './settings/Records.js';
 
 const canvas = document.getElementById('game-canvas');
 const settings = new Settings();
+const records = new Records();
 const audio = new Audio();
 const scene = new Scene(canvas);
 const camera = new Camera();
@@ -23,8 +25,9 @@ const paddleRenderer = new PaddleRenderer(scene.scene);
 const powerupRenderer = new PowerupRenderer(scene.scene);
 const aimIndicator = new AimIndicator(scene.scene);
 const effects = new Effects(scene.scene);
-const game = new Game(settings);
+const game = new Game(settings, records);
 const ui = new UI(game, settings);
+ui.setRecords(records);
 
 ui.setScreenToWorld((clientX, clientY) =>
   camera.screenToWorldX(clientX, clientY, window.innerWidth, window.innerHeight, CONFIG.paddle.playerZ)
@@ -90,6 +93,9 @@ function gameLoop(time) {
         ui.showPowerupToast(evt.puType, evt.target);
         break;
       }
+      case 'record':
+        ui.showRecord(evt.kind, evt.value);
+        break;
       case 'taunt':
         ui.showTaunt(evt.text);
         break;

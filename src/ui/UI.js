@@ -75,6 +75,7 @@ export class UI {
     this.showingSettings = false;
     this.hideAllScreens();
     this.menuScreen.classList.remove('hidden');
+    this.updateMenuRecords();
   }
 
   showSettings() {
@@ -279,6 +280,37 @@ export class UI {
 
   setScreenToWorld(fn) {
     this._screenToWorld = fn;
+  }
+
+  setRecords(records) {
+    this.records = records;
+    this.updateMenuRecords();
+  }
+
+  updateMenuRecords() {
+    const el = document.getElementById('menu-records');
+    if (!el || !this.records) return;
+    const r = this.records.data;
+    if (r.bestRally === 0 && r.wins === 0 && r.losses === 0) {
+      el.classList.add('hidden');
+      return;
+    }
+    el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
+    el.classList.remove('hidden');
+  }
+
+  showRecord(kind, value) {
+    this.powerupToastEl.textContent = kind === 'streak'
+      ? `NEW BEST STREAK: ${value}!`
+      : `NEW BEST RALLY: ${value}!`;
+    this.powerupToastEl.style.color = '#00ff88';
+    this.powerupToastEl.classList.add('hidden');
+    void this.powerupToastEl.offsetWidth;
+    this.powerupToastEl.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      this.powerupToastEl.classList.add('hidden');
+    }, 1600);
   }
 
   onMouseMove(e) {

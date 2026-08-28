@@ -18,15 +18,16 @@ const STATES = {
 };
 
 export class Game {
-  constructor(settings) {
+  constructor(settings, records = null) {
     this.settings = settings;
+    this.records = records;
     this.balls = [new Ball()];
     this.playerPaddle = new PlayerPaddle();
     this.personality = settings.get('playerMode') === 'versus' ? null : pickPersonality();
     this.aiPaddle = settings.get('playerMode') === 'versus'
       ? new PlayerPaddle(CONFIG.paddle.opponentZ)
       : new AIPaddle(settings.get('difficulty'), this.personality);
-    this.score = new Score(settings.get('winScore'));
+    this.score = new Score(settings.get('winScore'), settings.get('deuce'));
     this.court = new Court();
     this.powerups = new PowerupManager();
     this.state = STATES.MENU;
@@ -43,6 +44,8 @@ export class Game {
     this.hitStopTimer = 0;
     this.serveAimX = 0;
     this._tauntedImpressed = false;
+    this.pointStreak = 0;
+    this._lastScorer = null;
     this._gameOverSoundPlayed = false;
   }
 
@@ -118,6 +121,12 @@ export class Game {
     this.events.push({ type: 'taunt', text });
   }
 
+  recordRally() {
+    if (this.records && this.records.noteRally(this.rallyCombo)) {
+      this.events.push({ type: 'record', kind: 'rally', value: this.rallyCombo });
+    }
+  }
+
   start() {
     const versus = this.isVersus();
     if (versus) {
@@ -134,6 +143,10 @@ export class Game {
       }
     }
     this._tauntedImpressed = false;
+    this.pointStreak = 0;
+    this._lastScorer = null;
+    this.score.winScore = this.settings.get('winScore');
+    this.score.deuce = this.settings.get('deuce');
     this.score.reset();
     this.balls = [new Ball()];
     this.rallyCombo = 0;
@@ -216,6 +229,7 @@ export class Game {
           if (winner) {
             this.state = STATES.GAME_OVER;
             this.winner = winner;
+            if (this.records) this.records.noteResult(winner === 'player');
           } else {
             this.balls.length = 1;
             this.ball.reset(this.serveDirection);
@@ -247,6 +261,7 @@ export class Game {
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'player';
         this.applyPaddleShift('player', playerHit.offset);
+        this.recordRally();
         this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
       }
@@ -259,6 +274,7 @@ export class Game {
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'ai';
         this.applyPaddleShift('ai', aiHit.offset);
+        this.recordRally();
         this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
       }
@@ -294,6 +310,11 @@ export class Game {
           this.emitTaunt(side === 'ai' ? this.personality.win : this.personality.lose);
         }
         this._tauntedImpressed = false;
+        this.pointStreak = side === this._lastScorer ? this.pointStreak + 1 : 1;
+        this._lastScorer = side;
+        if (side === 'player' && this.records && this.records.noteStreak(this.pointStreak)) {
+          this.events.push({ type: 'record', kind: 'streak', value: this.pointStreak });
+        }
         this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
         break; // rally over
       }
