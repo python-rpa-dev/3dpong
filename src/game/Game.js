@@ -5,6 +5,7 @@ import { Score } from './Score.js';
 import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
 import { pickPersonality } from './AIPersonality.js';
+import { pickBoss, BOSS_TUNING } from './Boss.js';
 import { CONFIG } from '../config.js';
 
 const STATES = {
@@ -50,6 +51,8 @@ export class Game {
     this._grazes = 0;
     this._shrinks = 0;
     this._minMargin = 0;
+    this.boss = null;
+    this._bossTimer = 0;
   }
 
   isFunMode() {
@@ -153,6 +156,28 @@ export class Game {
     if (this._shrinks >= 3) this.tryUnlock('shrink_triple');
   }
 
+  /** Boss special rules, ticked every frame during PLAYING. */
+  tickBoss(dt) {
+    if (!this.boss) return;
+    if (this.boss.id === 'freezer') {
+      this._bossTimer += dt;
+      if (this._bossTimer >= BOSS_TUNING.freezerInterval) {
+        this._bossTimer = 0;
+        this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === 'player'));
+        this.activeEffects.push({ type: 'freeze', target: 'player', timeLeft: BOSS_TUNING.freezeDuration });
+        this.applyModifiers();
+        this.events.push({ type: 'boss', bossId: 'freezer', effect: 'freeze', label: this.boss.label });
+      }
+    }
+  }
+
+  bossShrinkPlayer() {
+    this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shrink' && e.target === 'player'));
+    this.activeEffects.push({ type: 'shrink', target: 'player', scale: BOSS_TUNING.shrinkScale, timeLeft: BOSS_TUNING.shrinkDuration });
+    this.applyModifiers();
+    this.events.push({ type: 'boss', bossId: 'shrinker', effect: 'shrink', label: this.boss.label });
+  }
+
   start() {
     const versus = this.isVersus();
     if (versus) {
@@ -174,6 +199,8 @@ export class Game {
     this._grazes = 0;
     this._shrinks = 0;
     this._minMargin = 0;
+    this.boss = this.settings.get('gameMode') === 'boss' ? pickBoss() : null;
+    this._bossTimer = 0;
     this.score.winScore = this.settings.get('winScore');
     this.score.deuce = this.settings.get('deuce');
     this.score.reset();
@@ -189,6 +216,9 @@ export class Game {
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
     this.events.length = 0;
+    if (this.boss) {
+      this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'intro', label: this.boss.label });
+    }
   }
 
   pause() {
@@ -232,6 +262,7 @@ export class Game {
 
       case STATES.PLAYING: {
         const gdt = dt * this.timeScale;
+        this.tickBoss(gdt);
         if (!this.playerPaddle.frozen) this.playerPaddle.update(gdt);
         const threat = this.threatBall();
         if (!this.aiPaddle.frozen) this.aiPaddle.update(gdt, threat, this.rallyCombo, this.isBallHidden(threat));
@@ -302,12 +333,16 @@ export class Game {
       const playerHit = this.court.checkPaddleBounce(ball, this.playerPaddle, fun);
       if (playerHit) {
         if (!fun) ball.increaseSpeed();
+        if (this.boss && this.boss.id === 'metronome') ball.increaseSpeed();
         this.rallyCombo++;
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'player';
         this.applyPaddleShift('player', playerHit.offset);
         this.recordRally();
         this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
+        if (this.boss && this.boss.id === 'shrinker' && this.rallyCombo % BOSS_TUNING.shrinkerHits === 0) {
+          this.bossShrinkPlayer();
+        }
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
       }
 

@@ -324,6 +324,23 @@ export class UI {
     }
   }
 
+  showBoss(label, effect) {
+    const texts = {
+      intro: `${label} BLOCKS YOUR PATH`,
+      shrink: `${label} SHRINKS YOUR PADDLE!`,
+      freeze: `${label} FREEZES YOUR PADDLE!`,
+    };
+    this.powerupToastEl.textContent = texts[effect] || `${label} STRIKES!`;
+    this.powerupToastEl.style.color = '#9d7bff';
+    this.powerupToastEl.classList.add('hidden');
+    void this.powerupToastEl.offsetWidth;
+    this.powerupToastEl.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      this.powerupToastEl.classList.add('hidden');
+    }, 2500);
+  }
+
   showAchievement(id) {
     const ach = ACHIEVEMENTS.find(a => a.id === id);
     if (!ach) return;

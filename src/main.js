@@ -107,6 +107,11 @@ function gameLoop(time) {
         ui.showAchievement(evt.id);
         audio.playPowerup('double');
         break;
+      case 'boss':
+        ui.showBoss(evt.label, evt.effect);
+        if (evt.effect === 'intro') audio.playPowerup('shrink');
+        else audio.playNetGrazed();
+        break;
       case 'netGrazed':
         audio.playNetGrazed();
         effects.spawnParticles(evt.x, 0.6, evt.z, 0xffffee, 10, 2.5);
