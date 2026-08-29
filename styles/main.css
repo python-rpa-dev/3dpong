@@ -314,3 +314,19 @@ body {
     padding: 10px 14px;
   }
 }
+
+/* Small viewports (phones) */
+@media (max-width: 520px) {
+  .screen {
+    min-width: 0;
+    width: calc(100vw - 24px);
+    padding: 28px 18px;
+  }
+  .screen h1 { font-size: 38px; letter-spacing: 3px; }
+  .screen h2 { font-size: 26px; margin-bottom: 16px; }
+  .subtitle { font-size: 13px; margin-bottom: 20px; }
+  .final-score { font-size: 24px; }
+  #score-display { font-size: 34px; padding: 6px 18px; top: 10px; }
+  #combo-count { font-size: 30px; }
+  #view-controls { flex-wrap: wrap; justify-content: center; gap: 8px; }
+}
