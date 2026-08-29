@@ -96,8 +96,16 @@ export class UI {
     window.addEventListener('keydown', (e) => this.onKeyDown(e));
     window.addEventListener('keyup', (e) => this.onKeyUp(e));
 
-    // Mouse
-    window.addEventListener('mousemove', (e) => this.onMouseMove(e));
+    // Pointer (mouse always steers; touch/pen steers while the finger is down)
+    window.addEventListener('pointermove', (e) => this.onPointerMove(e));
+    window.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') this._touchPointerId = e.pointerId;
+    });
+    const releaseTouch = (e) => {
+      if (e.pointerId === this._touchPointerId) this._touchPointerId = null;
+    };
+    window.addEventListener('pointerup', releaseTouch);
+    window.addEventListener('pointercancel', releaseTouch);
   }
 
   startGame() {
@@ -437,7 +445,8 @@ export class UI {
     }, 1600);
   }
 
-  onMouseMove(e) {
+  onPointerMove(e) {
+    if (e.pointerType !== 'mouse' && e.pointerId !== this._touchPointerId) return;
     if (this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED') {
       if (!this._screenToWorld) return;
       let worldX;
