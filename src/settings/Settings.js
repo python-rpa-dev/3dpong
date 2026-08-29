@@ -20,6 +20,7 @@ const DEFAULTS = {
   viewTilt: 0,
   viewZoom: 0,
   sideSwap: false,
+  steerAxis: 'horizontal',
 };
 
 export class Settings {

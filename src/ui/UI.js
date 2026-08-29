@@ -38,6 +38,7 @@ export class UI {
     document.getElementById('setting-music').checked = settings.get('music');
     document.getElementById('setting-gamepad').checked = settings.get('gamepad');
     document.getElementById('setting-daily').checked = settings.get('dailyChallenge');
+    document.getElementById('setting-steervertical').checked = settings.get('steerAxis') === 'vertical';
 
     // View angle controls (in-viewport)
     this.viewYawEl = document.getElementById('view-yaw');
@@ -149,6 +150,7 @@ export class UI {
     this.settings.set('music', document.getElementById('setting-music').checked);
     this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
     this.settings.set('dailyChallenge', document.getElementById('setting-daily').checked);
+    this.settings.set('steerAxis', document.getElementById('setting-steervertical').checked ? 'vertical' : 'horizontal');
     this.settings.save();
 
     this.showMenu();
@@ -421,7 +423,13 @@ export class UI {
   onMouseMove(e) {
     if (this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED') {
       if (!this._screenToWorld) return;
-      const worldX = this._screenToWorld(e.clientX, e.clientY);
+      let worldX;
+      if (this.settings.get('steerAxis') === 'vertical') {
+        const half = CONFIG.court.width / 2;
+        worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+      } else {
+        worldX = this._screenToWorld(e.clientX, e.clientY);
+      }
       this.game.playerPaddle.setWorldTarget(worldX);
       if (this.game.state === 'SERVE') {
         this.game.setServeAimWorld(worldX);

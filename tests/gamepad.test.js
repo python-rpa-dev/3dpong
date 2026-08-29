@@ -38,6 +38,34 @@ describe('GamepadInput', () => {
     expect(game.playerPaddle.targetX).toBeNull();
   });
 
+  it('vertical steer axis maps stick up to screen right', () => {
+    const game = new Game(makeSettings({ steerAxis: 'vertical' }));
+    const input = new GamepadInput(game);
+    input.setProvider(() => [{ axes: [0, -1], buttons: [] }]);
+    const x0 = game.playerPaddle.x;
+    input.update(1 / 60);
+    expect(game.playerPaddle.targetX).toBeLessThan(x0);
+  });
+
+  it('vertical steer ignores horizontal stick', () => {
+    const game = new Game(makeSettings({ steerAxis: 'vertical' }));
+    const input = new GamepadInput(game);
+    input.setProvider(() => [{ axes: [1, 0], buttons: [] }]);
+    input.update(1 / 60);
+    expect(game.playerPaddle.targetX).toBeNull();
+  });
+
+  it('vertical steer dpad up/down works', () => {
+    const game = new Game(makeSettings({ steerAxis: 'vertical' }));
+    const input = new GamepadInput(game);
+    const buttons = [];
+    buttons[12] = { pressed: true };
+    input.setProvider(() => [{ axes: [], buttons }]);
+    const x0 = game.playerPaddle.x;
+    input.update(1 / 60);
+    expect(game.playerPaddle.targetX).toBeLessThan(x0);
+  });
+
   it('dpad overrides and clamps to court', () => {
     const game = new Game(makeSettings());
     const input = new GamepadInput(game);

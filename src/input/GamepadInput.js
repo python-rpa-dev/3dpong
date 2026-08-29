@@ -28,13 +28,25 @@ export class GamepadInput {
   update(dt) {
     const pads = this.getGamepads() || [];
     const paddles = this.activePaddles();
+    const vertical = this.game.settings?.get('steerAxis') === 'vertical';
     for (let i = 0; i < paddles.length; i++) {
       const pad = pads[i];
       if (!pad) continue;
-      let axis = Math.abs(pad.axes?.[0] || 0) > DEADZONE ? pad.axes[0] : 0;
-      if (!axis && pad.buttons) {
-        if (pad.buttons[14]?.pressed) axis = -1; // dpad left -> world +x (screen left)
-        if (pad.buttons[15]?.pressed) axis = 1;
+      let axis = 0;
+      if (vertical) {
+        const raw = Math.abs(pad.axes?.[1] || 0) > DEADZONE ? pad.axes[1] : 0;
+        // Stick up (-1 on gamepad y-axis) steers like stick-right did: screen-right
+        axis = -raw;
+        if (!axis && pad.buttons) {
+          if (pad.buttons[12]?.pressed) axis = 1;  // dpad up -> screen right
+          if (pad.buttons[13]?.pressed) axis = -1; // dpad down -> screen left
+        }
+      } else {
+        axis = Math.abs(pad.axes?.[0] || 0) > DEADZONE ? pad.axes[0] : 0;
+        if (!axis && pad.buttons) {
+          if (pad.buttons[14]?.pressed) axis = -1; // dpad left -> world +x (screen left)
+          if (pad.buttons[15]?.pressed) axis = 1;
+        }
       }
       if (!axis) continue;
       const paddle = paddles[i];
