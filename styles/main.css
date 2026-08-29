@@ -278,7 +278,8 @@ body {
   accent-color: #00e5ff;
 }
 
-#btn-swap-sides {
+#btn-swap-sides,
+#btn-steer-axis {
   background: transparent;
   border: 1px solid rgba(0, 229, 255, 0.4);
   border-radius: 6px;
@@ -288,7 +289,8 @@ body {
   cursor: pointer;
 }
 
-#btn-swap-sides[aria-pressed="true"] {
+#btn-swap-sides[aria-pressed="true"],
+#btn-steer-axis[aria-pressed="true"] {
   background: rgba(0, 229, 255, 0.25);
   color: #ffffff;
 }

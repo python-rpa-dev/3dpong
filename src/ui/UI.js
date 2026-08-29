@@ -1,5 +1,6 @@
 import { CONFIG } from '../config.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
+import { remapSteerKey } from '../input/steerKeys.js';
 
 export class UI {
   constructor(game, settings) {
@@ -38,13 +39,20 @@ export class UI {
     document.getElementById('setting-music').checked = settings.get('music');
     document.getElementById('setting-gamepad').checked = settings.get('gamepad');
     document.getElementById('setting-daily').checked = settings.get('dailyChallenge');
-    document.getElementById('setting-steervertical').checked = settings.get('steerAxis') === 'vertical';
 
     // View angle controls (in-viewport)
     this.viewYawEl = document.getElementById('view-yaw');
     this.viewTiltEl = document.getElementById('view-tilt');
     this.viewZoomEl = document.getElementById('view-zoom');
     this.swapSidesBtn = document.getElementById('btn-swap-sides');
+    this.steerAxisBtn = document.getElementById('btn-steer-axis');
+    this.updateSteerButton();
+    this.steerAxisBtn.addEventListener('click', () => {
+      const next = this.settings.get('steerAxis') === 'vertical' ? 'horizontal' : 'vertical';
+      this.settings.set('steerAxis', next);
+      this.settings.save();
+      this.updateSteerButton();
+    });
     this.viewYawEl.value = String(settings.get('viewYaw'));
     this.viewTiltEl.value = String(Math.round(settings.get('viewTilt') * 100));
     this.viewZoomEl.value = String(Math.round(settings.get('viewZoom') * 100));
@@ -150,7 +158,6 @@ export class UI {
     this.settings.set('music', document.getElementById('setting-music').checked);
     this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
     this.settings.set('dailyChallenge', document.getElementById('setting-daily').checked);
-    this.settings.set('steerAxis', document.getElementById('setting-steervertical').checked ? 'vertical' : 'horizontal');
     this.settings.save();
 
     this.showMenu();
@@ -272,7 +279,8 @@ export class UI {
   }
 
   onKeyDown(e) {
-    const key = e.key;
+    const vertical = this.settings.get('steerAxis') === 'vertical';
+    const key = remapSteerKey(e.key, vertical);
     const versus = this.settings.get('playerMode') === 'versus';
     const leftPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
     const rightPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
@@ -312,7 +320,8 @@ export class UI {
   }
 
   onKeyUp(e) {
-    const key = e.key;
+    const vertical = this.settings.get('steerAxis') === 'vertical';
+    const key = remapSteerKey(e.key, vertical);
     const versus = this.settings.get('playerMode') === 'versus';
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
       if (versus && (key === 'a' || key === 'A')) {
@@ -368,6 +377,12 @@ export class UI {
       zoom: Number(this.viewZoomEl.value) / 100,
       swapped: this.settings.get('sideSwap'),
     });
+  }
+
+  updateSteerButton() {
+    const vertical = this.settings.get('steerAxis') === 'vertical';
+    this.steerAxisBtn.setAttribute('aria-pressed', String(vertical));
+    this.steerAxisBtn.innerHTML = vertical ? '&#8645; STEER &#8597;' : '&#8596; STEER';
   }
 
   updateSwapButton() {
