@@ -1,3 +1,7 @@
+import { CONFIG } from '../config.js';
+import { ACHIEVEMENTS } from '../settings/Records.js';
+import { remapSteerKey, applySwap } from '../input/steerKeys.js';
+
 export class UI {
   constructor(game, settings) {
     this.game = game;
@@ -31,6 +35,50 @@ export class UI {
     document.getElementById('setting-aitaunts').checked = settings.get('aiTaunts');
     document.getElementById('setting-netgraze').checked = settings.get('netGraze');
     document.getElementById('setting-bloom').checked = settings.get('bloom');
+    document.getElementById('setting-catchmode').checked = settings.get('catchMode');
+    document.getElementById('setting-music').checked = settings.get('music');
+    document.getElementById('setting-gamepad').checked = settings.get('gamepad');
+    document.getElementById('setting-daily').checked = settings.get('dailyChallenge');
+
+    // View angle controls (in-viewport)
+    this.viewYawEl = document.getElementById('view-yaw');
+    this.viewTiltEl = document.getElementById('view-tilt');
+    this.viewZoomEl = document.getElementById('view-zoom');
+    this.swapSidesBtn = document.getElementById('btn-swap-sides');
+    this.steerAxisBtn = document.getElementById('btn-steer-axis');
+    this.updateSteerButton();
+    this.steerAxisBtn.addEventListener('click', () => {
+      const next = this.settings.get('steerAxis') === 'vertical' ? 'horizontal' : 'vertical';
+      this.settings.set('steerAxis', next);
+      this.settings.save();
+      this.updateSteerButton();
+    });
+    this.viewYawEl.value = String(settings.get('viewYaw'));
+    this.viewTiltEl.value = String(Math.round(settings.get('viewTilt') * 100));
+    this.viewZoomEl.value = String(Math.round(settings.get('viewZoom') * 100));
+    this.updateSwapButton();
+    const emitView = () => {
+      const v = {
+        yaw: Number(this.viewYawEl.value),
+        tilt: Number(this.viewTiltEl.value) / 100,
+        zoom: Number(this.viewZoomEl.value) / 100,
+        swapped: this.settings.get('sideSwap'),
+      };
+      this.settings.set('viewYaw', v.yaw);
+      this.settings.set('viewTilt', v.tilt);
+      this.settings.set('viewZoom', v.zoom);
+      this.settings.save();
+      if (this.onViewControlsCb) this.onViewControlsCb(v);
+    };
+    this.viewYawEl.addEventListener('input', emitView);
+    this.viewTiltEl.addEventListener('input', emitView);
+    this.viewZoomEl.addEventListener('input', emitView);
+    this.swapSidesBtn.addEventListener('click', () => {
+      this.settings.set('sideSwap', !this.settings.get('sideSwap'));
+      this.settings.save();
+      this.updateSwapButton();
+      emitView();
+    });
     this.updateFunSettingsVisibility();
 
     // Button handlers
@@ -106,6 +154,10 @@ export class UI {
     this.settings.set('aiTaunts', document.getElementById('setting-aitaunts').checked);
     this.settings.set('netGraze', document.getElementById('setting-netgraze').checked);
     this.settings.set('bloom', document.getElementById('setting-bloom').checked);
+    this.settings.set('catchMode', document.getElementById('setting-catchmode').checked);
+    this.settings.set('music', document.getElementById('setting-music').checked);
+    this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
+    this.settings.set('dailyChallenge', document.getElementById('setting-daily').checked);
     this.settings.save();
 
     this.showMenu();
@@ -144,7 +196,7 @@ export class UI {
           this.comboDisplay.classList.remove('hidden');
           this.comboCountEl.textContent = this.game.rallyCombo;
           // Color shifts with combo
-          const colors = [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95];
+          const colors = CONFIG.comboColors;
           const idx = Math.min(Math.floor(this.game.rallyCombo / 3), colors.length - 1);
           this.comboCountEl.style.color = '#' + colors[idx].toString(16).padStart(6, '0');
         } else {
@@ -191,9 +243,11 @@ export class UI {
       shrink: 'OPPONENT SHRUNK!',
       slowmo: 'SLOW-MO!',
       double: 'DOUBLE POINTS!',
+      ghost: 'GHOST BALL!',
+      freeze: 'OPPONENT FROZEN!',
       multi: 'MULTI-BALL!',
     };
-    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', multi: '#00ff88' };
+    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', multi: '#00ff88' };
     let text = labels[puType] || 'POWER-UP!';
     const versus = this.settings.get('playerMode') === 'versus';
     if ((puType === 'shrink' || puType === 'double') && target === 'ai') {
@@ -225,22 +279,24 @@ export class UI {
   }
 
   onKeyDown(e) {
-    const key = e.key;
+    const vertical = this.settings.get('steerAxis') === 'vertical';
+    const swapped = this.settings.get('sideSwap');
+    const key = remapSteerKey(e.key, vertical);
     const versus = this.settings.get('playerMode') === 'versus';
     const leftPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
     const rightPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
 
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
       if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey('left', true);
+        this.game.playerPaddle.setKey(applySwap('left', swapped), true);
       } else {
-        leftPaddle.setKey('left', true);
+        leftPaddle.setKey(applySwap('left', swapped), true);
       }
     } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey('right', true);
+        this.game.playerPaddle.setKey(applySwap('right', swapped), true);
       } else {
-        rightPaddle.setKey('right', true);
+        rightPaddle.setKey(applySwap('right', swapped), true);
       }
     } else if (key === ' ' || key === 'p' || key === 'P') {
       e.preventDefault();
@@ -265,19 +321,21 @@ export class UI {
   }
 
   onKeyUp(e) {
-    const key = e.key;
+    const vertical = this.settings.get('steerAxis') === 'vertical';
+    const swapped = this.settings.get('sideSwap');
+    const key = remapSteerKey(e.key, vertical);
     const versus = this.settings.get('playerMode') === 'versus';
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
       if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey('left', false);
+        this.game.playerPaddle.setKey(applySwap('left', swapped), false);
       } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey('left', false);
+        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('left', swapped), false);
       }
     } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey('right', false);
+        this.game.playerPaddle.setKey(applySwap('right', swapped), false);
       } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey('right', false);
+        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('right', swapped), false);
       }
     }
   }
@@ -297,10 +355,72 @@ export class UI {
     const r = this.records.data;
     if (r.bestRally === 0 && r.wins === 0 && r.losses === 0) {
       el.classList.add('hidden');
-      return;
+    } else {
+      el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
+      el.classList.remove('hidden');
     }
-    el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
-    el.classList.remove('hidden');
+    const achEl = document.getElementById('menu-achievements');
+    if (achEl) {
+      const unlocked = ACHIEVEMENTS.filter(a => this.records.has(a.id));
+      if (unlocked.length === 0) {
+        achEl.classList.add('hidden');
+      } else {
+        achEl.textContent = `TROPHIES ${unlocked.length}/${ACHIEVEMENTS.length}: ${unlocked.map(a => a.label).join(' · ')}`;
+        achEl.classList.remove('hidden');
+      }
+    }
+  }
+
+  onViewControls(cb) {
+    this.onViewControlsCb = cb;
+    cb({
+      yaw: Number(this.viewYawEl.value),
+      tilt: Number(this.viewTiltEl.value) / 100,
+      zoom: Number(this.viewZoomEl.value) / 100,
+      swapped: this.settings.get('sideSwap'),
+    });
+  }
+
+  updateSteerButton() {
+    const vertical = this.settings.get('steerAxis') === 'vertical';
+    this.steerAxisBtn.setAttribute('aria-pressed', String(vertical));
+    this.steerAxisBtn.innerHTML = vertical ? '&#8645; STEER &#8597;' : '&#8596; STEER';
+  }
+
+  updateSwapButton() {
+    this.swapSidesBtn.setAttribute('aria-pressed', String(Boolean(this.settings.get('sideSwap'))));
+  }
+
+  showBoss(label, effect) {
+    const texts = {
+      intro: `${label} BLOCKS YOUR PATH`,
+      shrink: `${label} SHRINKS YOUR PADDLE!`,
+      freeze: `${label} FREEZES YOUR PADDLE!`,
+    };
+    this.powerupToastEl.textContent = texts[effect] || `${label} STRIKES!`;
+    this.powerupToastEl.style.color = '#9d7bff';
+    this.powerupToastEl.classList.add('hidden');
+    void this.powerupToastEl.offsetWidth;
+    this.powerupToastEl.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      this.powerupToastEl.classList.add('hidden');
+    }, 2500);
+  }
+
+  showAchievement(id) {
+    const ach = ACHIEVEMENTS.find(a => a.id === id);
+    if (!ach) return;
+    this.powerupToastEl.textContent = `ACHIEVEMENT UNLOCKED — ${ach.label}!`;
+    this.powerupToastEl.style.color = '#ffcc00';
+    this.powerupToastEl.classList.add('hidden');
+    void this.powerupToastEl.offsetWidth;
+    this.powerupToastEl.classList.remove('hidden');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      this.powerupToastEl.classList.add('hidden');
+    }, 2500);
+    this.updateMenuRecords();
   }
 
   showRecord(kind, value) {
@@ -320,7 +440,13 @@ export class UI {
   onMouseMove(e) {
     if (this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED') {
       if (!this._screenToWorld) return;
-      const worldX = this._screenToWorld(e.clientX, e.clientY);
+      let worldX;
+      if (this.settings.get('steerAxis') === 'vertical') {
+        const half = CONFIG.court.width / 2;
+        worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+      } else {
+        worldX = this._screenToWorld(e.clientX, e.clientY);
+      }
       this.game.playerPaddle.setWorldTarget(worldX);
       if (this.game.state === 'SERVE') {
         this.game.setServeAimWorld(worldX);

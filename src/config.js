@@ -22,11 +22,11 @@ export const CONFIG = {
     moveSpeed: 12,
   },
   camera: {
-    fov: 55,
+    fov: 60,
     near: 0.1,
     far: 100,
-    position: { x: 14, y: 22, z: -14 },
-    lookAt: { x: 0, y: 0, z: 0 },
+    position: { x: 10, y: 27, z: -21 },
+    lookAt: { x: 0, y: 0, z: -3 },
   },
   colors: {
     background: 0x0a0a1a,
@@ -69,6 +69,8 @@ export const CONFIG = {
   postfx: {
     bloom: { strength: 0.7, radius: 0.5, threshold: 0.82 },
   },
+
+  comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
   paddleShifts: {
     edgeThreshold: 0.65,
     centerThreshold: 0.2,
@@ -88,9 +90,11 @@ export const CONFIG = {
     durationWide: 6,
     durationShrink: 6,
     durationSlowmo: 3,
+    durationGhost: 4,
+    durationFreeze: 1.2,
     doublePointsGoals: 2,
-    types: ['wide', 'shrink', 'slowmo', 'double'],
-    colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00 },
+    types: ['wide', 'shrink', 'slowmo', 'double', 'ghost', 'freeze'],
+    colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00, ghost: 0x9d7bff, freeze: 0x88ddff },
   },
   fun: {
     spinFactor: 0.6,
@@ -100,6 +104,7 @@ export const CONFIG = {
     tauntImpressedCombo: 8,
     netGrazeChance: 0.12,
     netGrazeNudge: 0.15,
+    catchSpeedFactor: 0.82,
     extraBallSpeedFactor: 0.85,
     comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
   },

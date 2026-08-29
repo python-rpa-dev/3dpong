@@ -20,11 +20,25 @@
     </div>
     <div id="powerup-toast" class="hidden"></div>
     <div id="taunt-bubble" class="hidden"></div>
+    <div id="view-controls">
+      <button id="btn-swap-sides" title="Trade places with opponent">&#8646; SIDES</button>
+      <button id="btn-steer-axis" title="Toggle steering between left/right and up/down">&#8645; STEER</button>
+      <label title="Orbit view left/right">&#10230;
+        <input type="range" id="view-yaw" min="-45" max="45" step="1" value="0">
+      </label>
+      <label title="Raise/lower camera">&#8597;
+        <input type="range" id="view-tilt" min="-100" max="100" step="5" value="0">
+      </label>
+      <label title="Zoom in (stops before the court is cut off)">&#8853;
+        <input type="range" id="view-zoom" min="0" max="100" step="5" value="0">
+      </label>
+    </div>
 
     <div id="menu-screen" class="screen">
       <h1>PONG 3D</h1>
       <p class="subtitle">Isometric Neon Pong</p>
       <p id="menu-records" class="subtitle hidden"></p>
+      <p id="menu-achievements" class="subtitle hidden"></p>
       <button id="btn-play" class="neon-btn">PLAY</button>
       <button id="btn-settings" class="neon-btn">SETTINGS</button>
     </div>
@@ -73,6 +87,7 @@
         <select id="setting-gamemode">
           <option value="classic">Classic (Dull)</option>
           <option value="fun" selected>Fun (Spin + Speed + Combo)</option>
+          <option value="boss">Boss Rush (special AI rules)</option>
         </select>
       </div>
       <div class="setting-row">
@@ -86,6 +101,30 @@
         <label>
           <input type="checkbox" id="setting-bloom" checked>
           Bloom glow (neon post-processing)
+        </label>
+      </div>
+      <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-catchmode">
+          Catch mode (slower returns — beginner assist)
+        </label>
+      </div>
+      <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-music" checked>
+          Rally music (builds with combo)
+        </label>
+      </div>
+      <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-gamepad" checked>
+          Gamepad support (pad 1 = P1, pad 2 = P2 in versus)
+        </label>
+      </div>
+      <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-daily">
+          Daily challenge (same random seed for everyone today)
         </label>
       </div>
       <div id="fun-settings">

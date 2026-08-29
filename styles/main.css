@@ -158,7 +158,8 @@ body {
 }
 
 .setting-row select option {
-  background: #1a1a3e;
+  background: #f2f4ff;
+  color: #16163a;
 }
 
 /* Combo display - right side */
@@ -241,3 +242,55 @@ body {
 
 /* Utility */
 .hidden { display: none !important; }
+
+/* View angle controls (in-viewport) */
+#view-controls {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(10, 10, 30, 0.55);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 10px;
+  pointer-events: auto;
+  opacity: 0.45;
+  transition: opacity 0.25s ease;
+  z-index: 11;
+}
+
+#view-controls:hover {
+  opacity: 1;
+}
+
+#view-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8a8ad0;
+  font-size: 14px;
+}
+
+#view-controls input[type="range"] {
+  width: 90px;
+  accent-color: #00e5ff;
+}
+
+#btn-swap-sides,
+#btn-steer-axis {
+  background: transparent;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 6px;
+  color: #00e5ff;
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+#btn-swap-sides[aria-pressed="true"],
+#btn-steer-axis[aria-pressed="true"] {
+  background: rgba(0, 229, 255, 0.25);
+  color: #ffffff;
+}

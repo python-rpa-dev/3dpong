@@ -12,6 +12,8 @@ import { UI } from './ui/UI.js';
 import { Audio } from './audio/Audio.js';
 import { Settings } from './settings/Settings.js';
 import { Records } from './settings/Records.js';
+import { GamepadInput } from './input/GamepadInput.js';
+import { effectiveYaw } from './scene/cameraPose.js';
 
 const canvas = document.getElementById('game-canvas');
 const settings = new Settings();
@@ -33,6 +35,13 @@ ui.setScreenToWorld((clientX, clientY) =>
   camera.screenToWorldX(clientX, clientY, window.innerWidth, window.innerHeight, CONFIG.paddle.playerZ)
 );
 
+ui.onViewControls((v) => {
+  camera.setView(effectiveYaw(v.yaw, v.swapped), v.tilt);
+  camera.setZoom(v.zoom);
+});
+
+const gamepadInput = new GamepadInput(game);
+
 let lastTime = performance.now();
 
 function gameLoop(time) {
@@ -43,6 +52,7 @@ function gameLoop(time) {
     if (scene.bloomEnabled !== settings.get('bloom')) {
       scene.setBloom(settings.get('bloom'));
     }
+    if (settings.get('gamepad')) gamepadInput.update(dt);
     game.update(dt);
 
     // Drain game events and trigger effects/sounds
@@ -99,6 +109,15 @@ function gameLoop(time) {
       case 'record':
         ui.showRecord(evt.kind, evt.value);
         break;
+      case 'achievement':
+        ui.showAchievement(evt.id);
+        audio.playPowerup('double');
+        break;
+      case 'boss':
+        ui.showBoss(evt.label, evt.effect);
+        if (evt.effect === 'intro') audio.playPowerup('shrink');
+        else audio.playNetGrazed();
+        break;
       case 'netGrazed':
         audio.playNetGrazed();
         effects.spawnParticles(evt.x, 0.6, evt.z, 0xffffee, 10, 2.5);
@@ -113,6 +132,7 @@ function gameLoop(time) {
         effects.spawnParticles(evt.x, 1, evt.z, color, CONFIG.effects.scoreParticles * 2, 5);
         effects.triggerShake(CONFIG.effects.scoreShake * 1.5, CONFIG.effects.scoreShakeDuration);
         effects.triggerScreenFlash(isPlayer ? color : 0xff0044, 0.3);
+        camera.punch(0.06);
         break;
       }
     }
@@ -128,8 +148,18 @@ function gameLoop(time) {
     game._gameOverSoundPlayed = false;
   }
 
+  // Rally music follows game state + combo intensity
+  if (settings.get('music') && audio.enabled && game.state === 'PLAYING') {
+    if (!audio.musicPlaying) audio.startMusic();
+    audio.setMusicIntensity(game.rallyCombo);
+  } else if (audio.musicPlaying) {
+    audio.stopMusic();
+  }
+
   // Update renderers
-  ballRenderer.update(game.balls, dt);
+  ballRenderer.setGhost(game.isBallHidden(game.threatBall()));
+  ballRenderer.update(game.balls, dt, game.rallyCombo);
+  courtRenderer.update(game.rallyCombo, dt);
   paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
   powerupRenderer.update(game.powerups.active, dt);
   aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);
@@ -137,6 +167,7 @@ function gameLoop(time) {
 
   // Apply screen shake to camera
   camera.applyShake(effects.shakeOffset);
+  camera.update(dt);
 
   // Render
   scene.render(camera.camera);

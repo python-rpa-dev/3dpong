@@ -13,6 +13,7 @@ export class AIPaddle extends Paddle {
     this.targetX = 0;
     this.lastUpdate = 0;
     this.time = 0;
+    this.rng = Math.random;
   }
 
   setDifficulty(difficulty) {
@@ -23,7 +24,7 @@ export class AIPaddle extends Paddle {
     this.errorFactor = aiConfig.error;
   }
 
-  update(dt, ball, rallyCombo = 0) {
+  update(dt, ball, rallyCombo = 0, hidden = false) {
     this.time += dt;
 
     // Rally combo makes the AI worse: bigger errors, slower reaction
@@ -34,7 +35,7 @@ export class AIPaddle extends Paddle {
     if (this.time >= this.lastUpdate + effectiveDelay) {
       this.lastUpdate = this.time;
 
-      if (ball.active && ball.vz > 0) {
+      if (!hidden && ball.active && ball.vz > 0) {
         // Ball moving toward AI — predict where it will be
         if (Math.abs(ball.vz) < 0.01) {
           this.targetX = 0;
@@ -58,11 +59,11 @@ export class AIPaddle extends Paddle {
           }
 
           // Add error (grows with combo)
-          const error = (Math.random() - 0.5) * 2 * effectiveError * halfWidth;
+          const error = (this.rng() - 0.5) * 2 * effectiveError * halfWidth;
 
           // Panic chance on long rallies: AI moves wrong direction
           const panicChance = Math.min(rallyCombo * 0.03, 0.25);
-          if (Math.random() < panicChance) {
+          if (this.rng() < panicChance) {
             this.targetX = -predictedX + error * 2;
           } else {
             this.targetX = predictedX + error;

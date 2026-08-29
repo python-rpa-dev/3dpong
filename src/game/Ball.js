@@ -14,7 +14,7 @@ export class Ball {
     this.speedMultiplier = 1;
   }
 
-  reset(direction, aimX = null) {
+  reset(direction, aimX = null, rng = Math.random) {
     this.x = 0;
     this.z = 0;
     this.prevZ = 0;
@@ -22,7 +22,7 @@ export class Ball {
     this.speedMultiplier = 1;
     this.rallyHits = 0;
     const angle = aimX === null
-      ? (Math.random() - 0.5) * 0.4
+      ? (rng() - 0.5) * 0.4
       : Math.max(-1, Math.min(1, aimX)) * CONFIG.serve.maxAimAngle;
     this.vx = Math.sin(angle) * this.speed;
     this.vz = Math.cos(angle) * this.speed * direction;
@@ -82,6 +82,19 @@ export class Ball {
 
   increaseSpeed() {
     this.speed = Math.min(this.speed * (1 + CONFIG.ball.speedIncrement), CONFIG.ball.maxSpeed);
+    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vz * this.vz);
+    if (currentSpeed > 0) {
+      const scale = this.speed / currentSpeed;
+      this.vx *= scale;
+      this.vz *= scale;
+    }
+  }
+
+  /**
+   * Catch mode assist: slow the ball after an AI hit so beginners can rally longer.
+   */
+  applyCatchAssist(factor) {
+    this.speed = Math.max(this.baseSpeed, this.speed * factor);
     const currentSpeed = Math.sqrt(this.vx * this.vx + this.vz * this.vz);
     if (currentSpeed > 0) {
       const scale = this.speed / currentSpeed;

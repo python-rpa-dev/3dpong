@@ -2,15 +2,107 @@ export class Audio {
   constructor() {
     this.ctx = null;
     this.enabled = true;
+    this.musicPlaying = false;
+    this.musicLayer = 1;
+    this.musicTimer = null;
   }
 
   _ensureContext() {
+    if (typeof window === 'undefined') return;
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  /** Layered procedural rally music: intensity grows with combo. */
+  startMusic() {
+    if (!this.enabled || this.musicPlaying) return;
+    this._ensureContext();
+    if (!this.ctx) return;
+    if (!this.musicBus) {
+      this.musicBus = this.ctx.createGain();
+      this.musicBus.gain.value = 0.5;
+      this.musicBus.connect(this.ctx.destination);
+    }
+    this.musicPlaying = true;
+    this.musicStep = 0;
+    this.musicNextTime = this.ctx.currentTime + 0.1;
+    this.musicTimer = setInterval(() => this._scheduleMusic(), 80);
+  }
+
+  stopMusic() {
+    if (this.musicTimer) clearInterval(this.musicTimer);
+    this.musicTimer = null;
+    this.musicPlaying = false;
+  }
+
+  setMusicIntensity(combo) {
+    this.musicLayer = combo >= 15 ? 4 : combo >= 10 ? 3 : combo >= 5 ? 2 : 1;
+  }
+
+  _scheduleMusic() {
+    if (!this.ctx || !this.musicPlaying) return;
+    const stepDur = 60 / 128 / 2; // eighth notes at 128 BPM
+    while (this.musicNextTime < this.ctx.currentTime + 0.4) {
+      this._musicStep(this.musicStep, this.musicNextTime);
+      this.musicNextTime += stepDur;
+      this.musicStep = (this.musicStep + 1) % 32;
+    }
+  }
+
+  _musicStep(step, t) {
+    const layer = this.musicLayer || 1;
+    const roots = [55, 55, 65.41, 49]; // A1 A1 C2 G1, one per bar
+    const root = roots[Math.floor(step / 8) % 4];
+
+    if (step % 4 === 0) this._musicNote(root, t, 'triangle', 0.22, 0.12);
+    if (layer >= 2) {
+      const arp = [2, 3, 4, 3][step % 4];
+      this._musicNote(root * arp, t, 'square', 0.09, 0.035);
+    }
+    if (layer >= 3 && step % 2 === 1) this._musicHat(t);
+    if (layer >= 4 && step % 8 === 2) {
+      const lead = [4, 5, 6, 5][Math.floor(step / 8) % 4];
+      this._musicNote(root * lead, t, 'sawtooth', 0.3, 0.04);
+    }
+  }
+
+  _musicNote(freq, t, type, dur, vol) {
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.connect(gain);
+    gain.connect(this.musicBus);
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
+  _musicHat(t) {
+    if (!this.noiseBuffer) {
+      const len = Math.floor(this.ctx.sampleRate * 0.05);
+      this.noiseBuffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const data = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 6000;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.05, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.musicBus);
+    src.start(t);
+    src.stop(t + 0.05);
   }
 
   playPaddleHit(speed, combo = 0) {
@@ -118,6 +210,8 @@ export class Audio {
       shrink: [392, 262],
       slowmo: [660, 330, 165],
       double: [523, 523, 784],
+      ghost: [880, 660, 494],
+      freeze: [1400, 300],
     };
     const notes = freqs[puType] || [440];
     notes.forEach((freq, i) => {

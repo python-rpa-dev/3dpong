@@ -12,6 +12,15 @@ const DEFAULTS = {
   aiTaunts: true,
   netGraze: true,
   bloom: true,
+  catchMode: false,
+  music: true,
+  gamepad: true,
+  dailyChallenge: false,
+  viewYaw: 0,
+  viewTilt: 0,
+  viewZoom: 0,
+  sideSwap: false,
+  steerAxis: 'horizontal',
 };
 
 export class Settings {

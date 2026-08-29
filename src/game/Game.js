@@ -5,6 +5,8 @@ import { Score } from './Score.js';
 import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
 import { pickPersonality } from './AIPersonality.js';
+import { pickBoss, BOSS_TUNING } from './Boss.js';
+import { mulberry32, dailySeed } from './rng.js';
 import { CONFIG } from '../config.js';
 
 const STATES = {
@@ -47,6 +49,12 @@ export class Game {
     this.pointStreak = 0;
     this._lastScorer = null;
     this._gameOverSoundPlayed = false;
+    this._grazes = 0;
+    this._shrinks = 0;
+    this._minMargin = 0;
+    this.boss = null;
+    this._bossTimer = 0;
+    this.rng = Math.random;
   }
 
   isFunMode() {
@@ -100,7 +108,7 @@ export class Game {
   spawnExtraBall(awayFrom) {
     const dir = awayFrom === 'player' ? 1 : -1;
     const extra = new Ball();
-    extra.reset(dir);
+    extra.reset(dir, null, this.rng);
     const f = CONFIG.fun.extraBallSpeedFactor;
     extra.vx *= f;
     extra.vz *= f;
@@ -129,6 +137,47 @@ export class Game {
     if (this.records && this.records.noteRally(this.rallyCombo)) {
       this.events.push({ type: 'record', kind: 'rally', value: this.rallyCombo });
     }
+    if (this.achievementsEnabled() && this.rallyCombo >= 20) {
+      this.tryUnlock('rally20');
+    }
+  }
+
+  achievementsEnabled() {
+    return !!this.records && !this.isVersus();
+  }
+
+  tryUnlock(id) {
+    if (this.records.unlock(id)) {
+      this.events.push({ type: 'achievement', id });
+    }
+  }
+
+  noteOpponentShrink(affected, scale) {
+    if (!this.achievementsEnabled() || affected !== 'ai' || !(scale < 1)) return;
+    this._shrinks++;
+    if (this._shrinks >= 3) this.tryUnlock('shrink_triple');
+  }
+
+  /** Boss special rules, ticked every frame during PLAYING. */
+  tickBoss(dt) {
+    if (!this.boss) return;
+    if (this.boss.id === 'freezer') {
+      this._bossTimer += dt;
+      if (this._bossTimer >= BOSS_TUNING.freezerInterval) {
+        this._bossTimer = 0;
+        this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === 'player'));
+        this.activeEffects.push({ type: 'freeze', target: 'player', timeLeft: BOSS_TUNING.freezeDuration });
+        this.applyModifiers();
+        this.events.push({ type: 'boss', bossId: 'freezer', effect: 'freeze', label: this.boss.label });
+      }
+    }
+  }
+
+  bossShrinkPlayer() {
+    this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shrink' && e.target === 'player'));
+    this.activeEffects.push({ type: 'shrink', target: 'player', scale: BOSS_TUNING.shrinkScale, timeLeft: BOSS_TUNING.shrinkDuration });
+    this.applyModifiers();
+    this.events.push({ type: 'boss', bossId: 'shrinker', effect: 'shrink', label: this.boss.label });
   }
 
   start() {
@@ -149,6 +198,14 @@ export class Game {
     this._tauntedImpressed = false;
     this.pointStreak = 0;
     this._lastScorer = null;
+    this._grazes = 0;
+    this._shrinks = 0;
+    this._minMargin = 0;
+    this.boss = this.settings.get('gameMode') === 'boss' ? pickBoss() : null;
+    this._bossTimer = 0;
+    this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
+    this.powerups.rng = this.rng;
+    if (this.aiPaddle.rng) this.aiPaddle.rng = this.rng;
     this.score.winScore = this.settings.get('winScore');
     this.score.deuce = this.settings.get('deuce');
     this.score.reset();
@@ -160,10 +217,13 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.powerups.reset();
-    this.serveDirection = Math.random() > 0.5 ? 1 : -1;
+    this.serveDirection = this.rng() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
     this.events.length = 0;
+    if (this.boss) {
+      this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'intro', label: this.boss.label });
+    }
   }
 
   pause() {
@@ -200,15 +260,17 @@ export class Game {
       case STATES.SERVE:
         this.serveTimer -= dt;
         if (this.serveTimer <= 0) {
-          this.ball.reset(this.serveDirection, this.currentServeAim());
+          this.ball.reset(this.serveDirection, this.currentServeAim(), this.rng);
           this.state = STATES.PLAYING;
         }
         break;
 
       case STATES.PLAYING: {
         const gdt = dt * this.timeScale;
-        this.playerPaddle.update(gdt);
-        this.aiPaddle.update(gdt, this.threatBall(), this.rallyCombo);
+        this.tickBoss(gdt);
+        if (!this.playerPaddle.frozen) this.playerPaddle.update(gdt);
+        const threat = this.threatBall();
+        if (!this.aiPaddle.frozen) this.aiPaddle.update(gdt, threat, this.rallyCombo, this.isBallHidden(threat));
         for (const ball of this.balls) ball.update(gdt);
         this.handleCollisions();
 
@@ -234,9 +296,14 @@ export class Game {
             this.state = STATES.GAME_OVER;
             this.winner = winner;
             if (this.records) this.records.noteResult(winner === 'player');
+            if (winner === 'player' && this.achievementsEnabled()) {
+              this.tryUnlock('first_win');
+              if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
+              if (this._minMargin <= -5) this.tryUnlock('comeback');
+            }
           } else {
             this.balls.length = 1;
-            this.ball.reset(this.serveDirection);
+            this.ball.reset(this.serveDirection, null, this.rng);
             this.rallyCombo = 0;
             this.state = STATES.SERVE;
             this.serveTimer = CONFIG.serve.delay;
@@ -259,9 +326,11 @@ export class Game {
 
       // Net graze: rare lucky/unlucky deflection when crossing the net line
       if (this.netGrazeEnabled() && ball.crossedNet()
-          && Math.random() < CONFIG.fun.netGrazeChance) {
-        const nudge = 1 + (Math.random() - 0.5) * 2 * CONFIG.fun.netGrazeNudge;
+          && this.rng() < CONFIG.fun.netGrazeChance) {
+        const nudge = 1 + (this.rng() - 0.5) * 2 * CONFIG.fun.netGrazeNudge;
         ball.vx *= nudge;
+        this._grazes++;
+        if (this.achievementsEnabled() && this._grazes >= 3) this.tryUnlock('grazer_3');
         this.events.push({ type: 'netGrazed', x: ball.x, z: 0 });
       }
 
@@ -269,12 +338,16 @@ export class Game {
       const playerHit = this.court.checkPaddleBounce(ball, this.playerPaddle, fun);
       if (playerHit) {
         if (!fun) ball.increaseSpeed();
+        if (this.boss && this.boss.id === 'metronome') ball.increaseSpeed();
         this.rallyCombo++;
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'player';
         this.applyPaddleShift('player', playerHit.offset);
         this.recordRally();
         this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
+        if (this.boss && this.boss.id === 'shrinker' && this.rallyCombo % BOSS_TUNING.shrinkerHits === 0) {
+          this.bossShrinkPlayer();
+        }
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
       }
 
@@ -282,6 +355,7 @@ export class Game {
       const aiHit = this.court.checkPaddleBounce(ball, this.aiPaddle, fun);
       if (aiHit) {
         if (!fun) ball.increaseSpeed();
+        if (this.settings.get('catchMode')) ball.applyCatchAssist(CONFIG.fun.catchSpeedFactor);
         this.rallyCombo++;
         this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
         this.lastHitter = 'ai';
@@ -314,6 +388,7 @@ export class Game {
           }
         }
         this.score.addPoint(side, points);
+        this._minMargin = Math.min(this._minMargin, this.score.playerScore - this.score.opponentScore);
         this.state = STATES.SCORED;
         this.hitStopTimer = CONFIG.hitStop.score;
         this.scoreTimer = CONFIG.serve.scoreDelay;
@@ -342,6 +417,14 @@ export class Game {
     } else if (type === 'double') {
       this.doublePoints[target] = Math.max(this.doublePoints[target], cfg.doublePointsGoals);
       this.activeEffects.push({ type, target, goalsLeft: cfg.doublePointsGoals });
+    } else if (type === 'ghost') {
+      this.activeEffects = this.activeEffects.filter(e => e.type !== 'ghost');
+      this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationGhost });
+    } else if (type === 'freeze') {
+      // Freezes the opponent's paddle briefly
+      const affected = opponent;
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === affected));
+      this.activeEffects.push({ type, target: affected, timeLeft: cfg.durationFreeze });
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;
@@ -352,6 +435,7 @@ export class Game {
         e => !(e.target === affected && (e.type === 'wide' || e.type === 'shrink'))
       );
       this.activeEffects.push({ type, target: affected, scale, timeLeft: duration });
+      if (type === 'shrink') this.noteOpponentShrink(affected, scale);
     }
 
     this.events.push({ type: 'powerup', puType: type, target });
@@ -380,6 +464,7 @@ export class Game {
     // One shift per paddle at a time; freshest wins
     this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shift' && e.target === affected));
     this.activeEffects.push({ type: 'shift', target: affected, scale, timeLeft: cfg.duration });
+    this.noteOpponentShrink(affected, scale);
     this.events.push({
       type: 'paddleShift',
       affected,
@@ -415,8 +500,15 @@ export class Game {
     let slowmo = false;
     let playerMult = 1;
     let aiMult = 1;
+    let playerFrozen = false;
+    let aiFrozen = false;
     for (const e of this.activeEffects) {
       if (e.type === 'slowmo') { slowmo = true; continue; }
+      if (e.type === 'freeze') {
+        if (e.target === 'player') playerFrozen = true;
+        else if (e.target === 'ai') aiFrozen = true;
+        continue;
+      }
       if (e.scale !== undefined) {
         if (e.target === 'player') playerMult *= e.scale;
         else if (e.target === 'ai') aiMult *= e.scale;
@@ -426,7 +518,15 @@ export class Game {
     const clamp = (m) => Math.max(0.5, Math.min(2, m));
     this.playerPaddle.width = this.playerPaddle.baseWidth * clamp(playerMult);
     this.aiPaddle.width = this.aiPaddle.baseWidth * clamp(aiMult);
+    this.playerPaddle.frozen = playerFrozen;
+    this.aiPaddle.frozen = aiFrozen;
     this.timeScale = slowmo ? cfg.slowmoScale : 1;
+  }
+
+  /** True while a ghost powerup hides balls heading toward the AI on its half. */
+  isBallHidden(ball) {
+    const ghost = this.activeEffects.some(e => e.type === 'ghost');
+    return ghost && ball.active && ball.vz > 0 && ball.z > 0;
   }
 
   drainEvents() {

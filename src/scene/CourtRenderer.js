@@ -22,6 +22,7 @@ export class CourtRenderer {
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0;
     this.group.add(floor);
+    this.floorMat = floorMat;
 
     // Side walls
     const wallMat = new THREE.MeshStandardMaterial({
@@ -29,6 +30,8 @@ export class CourtRenderer {
       roughness: 0.6,
       metalness: 0.2,
     });
+    this.wallMat = wallMat;
+    this.baseWallColor = new THREE.Color(CONFIG.colors.wall);
 
     // Left wall
     const leftWallGeo = new THREE.BoxGeometry(0.3, wallHeight, depth);
@@ -57,6 +60,7 @@ export class CourtRenderer {
     const frontEdge = new THREE.Mesh(edgeGeo, edgeMat);
     frontEdge.position.set(0, 0.025, -hd);
     this.group.add(frontEdge);
+    this.edgeMat = edgeMat;
 
     // Net (translucent plane at center)
     const netGeo = new THREE.PlaneGeometry(width, netHeight);
@@ -98,6 +102,31 @@ export class CourtRenderer {
     const topBar = new THREE.Mesh(barGeo, barMat);
     topBar.position.set(0, netHeight, 0);
     this.group.add(topBar);
+    this.barMat = barMat;
+    this.heat = 0;
+  }
+
+  /**
+   * Court "heats up" with rally length: floor glows, walls flush, edges brighten.
+   */
+  update(combo, dt = 1 / 60) {
+    const target = Math.min(combo / 15, 1);
+    this.heat += (target - this.heat) * Math.min(1, dt * 2.5);
+    const h = this.heat;
+    if (h < 0.005 && combo === 0) {
+      // settle fully to base when rally resets
+      this.floorMat.emissive.setRGB(0, 0, 0);
+      this.wallMat.color.copy(this.baseWallColor);
+      this.edgeMat.opacity = 0.6;
+      this.barMat.opacity = 0.3;
+      return;
+    }
+    // Heat color: deep magenta-orange glow
+    this.floorMat.emissive.setRGB(0.45 * h, 0.08 * h, 0.25 * h);
+    this.floorMat.emissiveIntensity = 0.6;
+    this.wallMat.color.copy(this.baseWallColor).lerp(new THREE.Color(0x8a1f4a), h * 0.7);
+    this.edgeMat.opacity = 0.6 + h * 0.4;
+    this.barMat.opacity = 0.3 + h * 0.5;
   }
 
   createFloorTexture() {
