@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 
 export class Effects {
-  constructor(scene) {
+  constructor(scene, camera) {
     this.scene = scene;
     this.particles = [];
     this.shakeOffset = new THREE.Vector3();
@@ -10,14 +10,27 @@ export class Effects {
     this.shakeDuration = 0;
     this.shakeMagnitude = 0;
 
-    // Screen flash
+    // Screen flash — parented to the camera so it can never peek into the
+    // frustum from the side at any view pose (world-space planes used to flicker in corners)
     this.flashMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(100, 100),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })
+      new THREE.PlaneGeometry(400, 400),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0,
+        depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+      })
     );
-    this.flashMesh.position.z = -50;
+    this.flashMesh.renderOrder = 999;
+    this.flashMesh.frustumCulled = false;
     this.flashMesh.visible = false;
-    scene.add(this.flashMesh);
+    const cam = camera && (camera.isObject3D ? camera : camera.camera);
+    if (cam) {
+      scene.add(cam);
+      this.flashMesh.position.set(0, 0, -5);
+      cam.add(this.flashMesh);
+    } else {
+      this.flashMesh.position.z = -50;
+      scene.add(this.flashMesh);
+    }
     this.flashTime = 0;
     this.flashDuration = 0;
 
