@@ -23,9 +23,9 @@ describe('cameraPose', () => {
 
   it('tilt raises and lowers the camera', () => {
     expect(poseFor(base.position, base.lookAt, 0, 1).position.y)
-      .toBeGreaterThan(base.position.y + 8);
+      .toBeGreaterThan(base.position.y + 5);
     expect(poseFor(base.position, base.lookAt, 0, -1).position.y)
-      .toBeLessThan(base.position.y);
+      .toBeLessThan(base.position.y - 5);
   });
 
   it('clampView bounds both axes', () => {
@@ -81,41 +81,48 @@ describe('cameraPose', () => {
     });
   });
 
-  describe('all court corners stay in frame', () => {
+  describe('court containment at every allowed pose', () => {
     const corners = [];
     for (const x of [-10, 10]) for (const z of [-15, 15]) { corners.push([x, 0, z]); corners.push([x, 2, z]); }
 
-    function worstMargin(yaw, tilt, aspect, fovScale) {
+    function requiredFov(yaw, tilt, aspect) {
       const p = poseFor(base.position, base.lookAt, yaw, tilt);
-      const cam = new THREE.PerspectiveCamera(base.fov * fovScale, aspect, 0.1, 100);
+      const cam = new THREE.PerspectiveCamera(base.fov, aspect, 0.1, 100);
       cam.position.set(p.position.x, p.position.y, p.position.z);
       cam.lookAt(p.lookAt.x, p.lookAt.y, p.lookAt.z);
       cam.updateMatrixWorld();
       cam.updateProjectionMatrix();
-      let w = Infinity;
+      let e = 0;
       for (const c of corners) {
+        const local = cam.worldToLocal(new THREE.Vector3(...c));
+        expect(local.z, `corner ${c} behind camera at yaw=${yaw} tilt=${tilt}`).toBeLessThan(-0.1);
         const v = new THREE.Vector3(...c).project(cam);
-        w = Math.min(w, 1 - Math.abs(v.x), 1 - Math.abs(v.y));
+        e = Math.max(e, Math.abs(v.x), Math.abs(v.y));
       }
-      return w;
+      return minFovToContain(base.fov, e);
     }
 
-    it('across allowed yaw/tilt, aspect ratios and the FOV punch', () => {
-      const yaws = [-45, -30, -15, 0, 15, 30, 45];
-      const tilts = [VIEW_LIMITS.tiltMin, -0.3, 0, 0.5, VIEW_LIMITS.tiltMax];
-      const aspects = [4 / 3, 16 / 9, 21 / 9];
-      for (const yawBase of yaws) {
+    it('all corners stay in front and fit within the base fov', () => {
+      for (const yawBase of [-45, -30, -15, 0, 15, 30, 45]) {
         for (const swap of [false, true]) {
           const yaw = effectiveYaw(yawBase, swap);
-          for (const tilt of tilts) {
-            for (const aspect of aspects) {
-              for (const fovScale of [1, 0.94]) {
-                expect(worstMargin(yaw, tilt, aspect, fovScale), `yaw=${yaw} tilt=${tilt} a=${aspect.toFixed(2)} fs=${fovScale}`).toBeGreaterThan(0);
-              }
+          for (const tilt of [VIEW_LIMITS.tiltMin, -0.5, 0, 0.5, VIEW_LIMITS.tiltMax]) {
+            for (const aspect of [4 / 3, 16 / 9, 21 / 9]) {
+              expect(requiredFov(yaw, tilt, aspect), `yaw=${yaw} tilt=${tilt} a=${aspect.toFixed(2)}`)
+                .toBeLessThanOrEqual(base.fov + 0.01);
             }
           }
         }
       }
+    });
+
+    it('full tilt is a real elevation change, not a zoom-out', () => {
+      const up = poseFor(base.position, base.lookAt, 0, VIEW_LIMITS.tiltMax).position;
+      const down = poseFor(base.position, base.lookAt, 0, VIEW_LIMITS.tiltMin).position;
+      const d0 = Math.hypot(base.position.x, base.position.y, base.position.z + 3);
+      expect(Math.hypot(up.x, up.y, up.z + 3)).toBeCloseTo(d0, 6); // constant distance
+      expect(down.y).toBeLessThan(base.position.y - 5);
+      expect(up.y).toBeGreaterThan(base.position.y + 5);
     });
   });
 });

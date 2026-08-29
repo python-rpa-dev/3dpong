@@ -6,13 +6,14 @@
 
 export const VIEW_LIMITS = {
   yawMax: 45,
-  tiltMin: -0.6,
+  tiltMin: -1,
   tiltMax: 1,
 };
 
-const TILT_UP_Y = 9;
-const TILT_DOWN_Y = 4;
-const TILT_UP_RADIUS = 0.25;
+/** Elevation orbit range in degrees (both directions from the base pose). */
+const TILT_DEG_RANGE = 25;
+const ELEV_MIN = (12 * Math.PI) / 180;
+const ELEV_MAX = (85 * Math.PI) / 180;
 
 export function clampView(yaw, tilt) {
   return {
@@ -42,7 +43,7 @@ export function minFovToContain(baseFovDeg, maxExtent) {
  * @param {{x,y,z}} basePos CONFIG.camera.position
  * @param {{x,y,z}} baseLook CONFIG.camera.lookAt
  * @param {number} yawDeg degrees, negative = orbit left
- * @param {number} tilt -1..1 normalized camera height offset
+ * @param {number} tilt -1..1 elevation orbit (constant distance), +/-25 degrees
  */
 export function poseFor(basePos, baseLook, yawDeg, tilt) {
   const rad = (yawDeg * Math.PI) / 180;
@@ -56,15 +57,23 @@ export function poseFor(basePos, baseLook, yawDeg, tilt) {
     y: baseLook.y,
     z: rotZ(baseLook.x, baseLook.z),
   };
-  let px = rotX(basePos.x, basePos.z);
-  let pz = rotZ(basePos.x, basePos.z);
+  const px = rotX(basePos.x, basePos.z);
+  const pz = rotZ(basePos.x, basePos.z);
 
-  const r = tilt > 0 ? 1 + TILT_UP_RADIUS * tilt : 1;
+  const dx = px - lookAt.x;
+  const dy = basePos.y - lookAt.y;
+  const dz = pz - lookAt.z;
+  const dist = Math.hypot(dx, dy, dz);
+  const horiz = Math.hypot(dx, dz);
+  let elev = Math.atan2(dy, horiz) + tilt * TILT_DEG_RANGE * (Math.PI / 180);
+  elev = Math.max(ELEV_MIN, Math.min(ELEV_MAX, elev));
+  const h = Math.cos(elev) * dist;
+
   return {
     position: {
-      x: lookAt.x + (px - lookAt.x) * r,
-      y: basePos.y + (tilt > 0 ? TILT_UP_Y : TILT_DOWN_Y) * tilt,
-      z: lookAt.z + (pz - lookAt.z) * r,
+      x: lookAt.x + (dx / horiz) * h,
+      y: lookAt.y + Math.sin(elev) * dist,
+      z: lookAt.z + (dz / horiz) * h,
     },
     lookAt,
   };
