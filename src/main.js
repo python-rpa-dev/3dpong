@@ -26,7 +26,7 @@ const ballRenderer = new BallRenderer(scene.scene);
 const paddleRenderer = new PaddleRenderer(scene.scene);
 const powerupRenderer = new PowerupRenderer(scene.scene);
 const aimIndicator = new AimIndicator(scene.scene);
-const effects = new Effects(scene.scene);
+const effects = new Effects(scene.scene, camera);
 const game = new Game(settings, records);
 const ui = new UI(game, settings);
 ui.setRecords(records);

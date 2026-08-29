@@ -1,5 +1,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html, body { overscroll-behavior: none; }
+
 body {
   overflow: hidden;
   background: #0a0a1a;
@@ -11,6 +13,7 @@ body {
   display: block;
   width: 100vw;
   height: 100vh;
+  touch-action: none;
 }
 
 #ui-overlay {
@@ -293,4 +296,61 @@ body {
 #btn-steer-axis[aria-pressed="true"] {
   background: rgba(0, 229, 255, 0.25);
   color: #ffffff;
+}
+
+/* Touch devices: no hover, bigger tap targets */
+@media (hover: none) {
+  #view-controls {
+    opacity: 0.9;
+    gap: 16px;
+    padding: 12px 16px;
+  }
+  #view-controls input[type="range"] {
+    width: 120px;
+    height: 28px;
+  }
+  #btn-swap-sides,
+  #btn-steer-axis {
+    padding: 10px 14px;
+  }
+}
+
+/* Small viewports (phones) */
+@media (max-width: 520px) {
+  .screen {
+    min-width: 0;
+    width: calc(100vw - 24px);
+    padding: 28px 18px;
+  }
+  .screen h1 { font-size: 38px; letter-spacing: 3px; }
+  .screen h2 { font-size: 26px; margin-bottom: 16px; }
+  .subtitle { font-size: 13px; margin-bottom: 20px; }
+  .final-score { font-size: 24px; }
+  #score-display { font-size: 34px; padding: 6px 18px; top: 10px; }
+  #combo-count { font-size: 30px; }
+  #view-controls { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .settings-scroll { max-height: 68vh; }
+}
+
+/* Settings menu groups */
+.settings-scroll {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 8px;
+  margin-bottom: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.35) transparent;
+}
+.settings-scroll::-webkit-scrollbar { width: 6px; }
+.settings-scroll::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.35); border-radius: 3px; }
+.settings-group { margin-bottom: 20px; text-align: left; }
+.settings-group h3 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: #00e5ff;
+  opacity: 0.85;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.18);
 }

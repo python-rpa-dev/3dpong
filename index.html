@@ -2,6 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAC8ElEQVR4nO3Zu02cURhFUWKKcAcu1yW6DpxYsmXY1zwE5x9YaEcEM0f6VnTn7u7ng/R0+wW6bPsFumz7Bbps+wW6bPsFumyP/3V//+0L9vD9x9/N93x8cGRwwJHBAUcGBxwZHHBkcMCRwQFHBgccyuBQBocyOJTBoQwOZXAog0MZHMrgUAZH5vkcjgwOODI44MjggCODA44MDjgyOODI4IAjgwOODA44MjjgyOCAI4MDjgwOOJTBoQwOZXAog0MZHMrgUAaHMjiUwaEMjszzORwZHHBkcMCRwQFHBgccGRxwZHDAkcEBRwYHHBkccGRwwJHBAUcGx8fheOKbrk3wyjj+2fa49zoZHNcPDmVwKINDGRzK4FAGhzI4lMGhDA5lcFzrAPM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4AG/9tP6D40vjOMh4nQ84PgmO/8p4hQ84PgOOZ8p4qQ84br4XyXiRDzhuPjjggAMOOOCAAw444IADjmsGBxxwwPH+Pl7wsXCM7+q3FTjeG4dfZeF4vY+3b4PjtnG86zY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY49Cc4lMGhDA5lcCiDQxkcyuBQBocyOJR9Nhw315Wfzz8mODI44MjggCODA44MDjgyOODI4IAjgwOODA44MjjgyOCAI4MDjgwOODI44FAGhzI4lMGhDA5lcCiDQxkcyuBQBocyODLP53BkcMCRwQFHBgccGRxwZHDAkcEBRwYHHBkccGRwwJHBAUcGBxwZHHBkcMChDA5lcCiDQxkcyuBQBocyOJTBoQwOZXBkns/hyOCAI4MDjgwOODI44MjgeBYO6Xf7Bbps+wW6bPsFumz7Bbps+wW6ar8AMNZWkagWm8sAAAAASUVORK5CYII=">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22PONG%203D%22%2C%22short_name%22%3A%22Pong3D%22%2C%22start_url%22%3A%22.%22%2C%22scope%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a1a%22%2C%22theme_color%22%3A%22%230a0a1a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAC8ElEQVR4nO3Zu02cURhFUWKKcAcu1yW6DpxYsmXY1zwE5x9YaEcEM0f6VnTn7u7ng%2FR0%2BwW6bPsFumz7Bbps%2BwW6bPsFumyP%2F3V%2F%2F%2B0L9vD9x9%2FN93x8cGRwwJHBAUcGBxwZHHBkcMCRwQFHBgccyuBQBocyOJTBoQwOZXAog0MZHMrgUAZH5vkcjgwOODI44MjggCODA44MDjgyOODI4IAjgwOODA44MjjgyOCAI4MDjgwOOJTBoQwOZXAog0MZHMrgUAaHMjiUwaEMjszzORwZHHBkcMCRwQFHBgccGRxwZHDAkcEBRwYHHBkccGRwwJHBAUcGx8fheOKbrk3wyjj%2B2fa49zoZHNcPDmVwKINDGRzK4FAGhzI4lMGhDA5lcFzrAPM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4APM9h21wjA8w33PYBsf4AG%2F9tP6D40vjOMh4nQ84PgmO%2F8p4hQ84PgOOZ8p4qQ84br4XyXiRDzhuPjjggAMOOOCAAw444IADjmsGBxxwwPH%2BPl7wsXCM7%2Bq3FTjeG4dfZeF4vY%2B3b4PjtnG86zY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY4xgeY7zlsg2N8gPmewzY49Cc4lMGhDA5lcCiDQxkcyuBQBocyOJR9Nhw315Wfzz8mODI44MjggCODA44MDjgyOODI4IAjgwOODA44MjjgyOCAI4MDjgwOODI44FAGhzI4lMGhDA5lcCiDQxkcyuBQBocyODLP53BkcMCRwQFHBgccGRxwZHDAkcEBRwYHHBkccGRwwJHBAUcGBxwZHHBkcMChDA5lcCiDQxkcyuBQBocyOJTBoQwOZXBkns%2FhyOCAI4MDjgwOODI44MjgeBYO6Xf7Bbps%2BwW6bPsFumz7Bbps%2BwW6ar8AMNZWkagWm8sAAAAASUVORK5CYII%3D%22%2C%22sizes%22%3A%22180x180%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PONG 3D</title>
   <link rel="stylesheet" href="/styles/main.css">
@@ -58,14 +64,17 @@
 
     <div id="settings-screen" class="screen hidden">
       <h2>SETTINGS</h2>
-      <div class="setting-row">
+      <div class="settings-scroll">
+      <div class="settings-group">
+        <h3>MATCH</h3>
+        <div class="setting-row">
         <label>Opponent</label>
         <select id="setting-playermode">
           <option value="ai" selected>vs CPU</option>
           <option value="versus">2 Players (local)</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Difficulty</label>
         <select id="setting-difficulty">
           <option value="easy">Easy</option>
@@ -73,7 +82,7 @@
           <option value="hard">Hard</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Win Score</label>
         <select id="setting-winscore">
           <option value="5">5</option>
@@ -82,7 +91,7 @@
           <option value="15">15</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Game Mode</label>
         <select id="setting-gamemode">
           <option value="classic">Classic (Dull)</option>
@@ -90,45 +99,21 @@
           <option value="boss">Boss Rush (special AI rules)</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Deuce (win by 2)</label>
         <select id="setting-deuce">
           <option value="true" selected>On</option>
           <option value="false">Off</option>
         </select>
       </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-bloom" checked>
-          Bloom glow (neon post-processing)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-catchmode">
-          Catch mode (slower returns — beginner assist)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-music" checked>
-          Rally music (builds with combo)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-gamepad" checked>
-          Gamepad support (pad 1 = P1, pad 2 = P2 in versus)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
+        <div class="setting-row checkbox-row">
         <label>
           <input type="checkbox" id="setting-daily">
           Daily challenge (same random seed for everyone today)
         </label>
       </div>
-      <div id="fun-settings">
-        <h3 class="fun-label">FUN MODE EXTRAS</h3>
+      <div id="fun-settings" class="settings-group">
+        <h3>RALLY CHAOS (fun mode)</h3>
         <div class="setting-row checkbox-row">
           <label>
             <input type="checkbox" id="setting-powerups" checked>
@@ -160,7 +145,39 @@
           </label>
         </div>
       </div>
-      <button id="btn-save-settings" class="neon-btn">SAVE</button>
+      </div>
+      <div class="settings-group">
+        <h3>LOOK & SOUND</h3>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-bloom" checked>
+          Bloom glow (neon post-processing)
+        </label>
+      </div>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-music" checked>
+          Rally music (builds with combo)
+        </label>
+      </div>
+      </div>
+      <div class="settings-group">
+        <h3>CONTROLS</h3>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-catchmode">
+          Catch mode (slower returns — beginner assist)
+        </label>
+      </div>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-gamepad" checked>
+          Gamepad support (pad 1 = P1, pad 2 = P2 in versus)
+        </label>
+      </div>
+      </div>
+      
+<button id="btn-save-settings" class="neon-btn">SAVE</button>
       <button id="btn-back" class="neon-btn">BACK</button>
     </div>
   </div>

@@ -44,3 +44,48 @@ Implement one at a time on `dev`, commit each separately.
 
 9. **Replay system** — seed + input log makes any match reproducible; shareable codes.
 10. **PWA offline install** — manifest + service worker so the single-file build is also installable.
+
+---
+
+## Round 3 backlog
+
+### Gameplay depth
+
+1. **Powerup drafts** — after a 5-rally, pick 1 of 2 random powerups to keep for your next hit (deckbuilding layer).
+2. **Hazard zones** — random court tiles that speed up / slow / curve the ball for one bounce; telegraphed with floor glow.
+3. **Curve/spin shot** — paddle-edge contact bends the ball path; aim skill without vertical physics (velocity stays planar).
+4. **Multi-stage AI difficulty** — AI ramps reaction/error within a game when losing, eases when winning (rubber-band tension).
+5. **Grazes as resource** — net grazes charge a special-shot meter (one free heavy shot per full bar).
+
+### Modes & meta
+
+6. **Survival/endless mode** — one life, balls keep coming faster; rally-score leaderboard by seed.
+7. **Zen practice mode** — no scoring, auto-returns, aim training with target zones.
+8. **Weekly gauntlet** — fixed modifier combo per week (e.g. boss + low-friction court + double shrink), shareable code.
+9. **Unlockable paddle trails/shapes** tied to achievements (pairs with round 2 #6).
+
+### Feel & juice
+
+10. **Ball shadow/ground indicator** — readability win at extreme camera tilts.
+11. **Slow-mo on match point** — brief time dilation + audio duck on game/match-point serves.
+12. **Hit-stop freeze** — ~30 ms freeze frame on big combo hits.
+13. **Ambient stadium reactions** — procedural crowd murmur swelling with rally length (Web Audio, no assets).
+
+### Social/sharing
+
+14. **Share cards** — end screen emits a text/PNG result card ("21-17 vs Metronome, best 14-rally, seed 20260829").
+15. **Replay theater** — watch input-log replays with camera controls (builds on round 2 #9).
+
+---
+
+## Caveats & known limitations
+
+### PWA / mobile install (shipped in `779efd8`)
+- **No service worker** — intentionally skipped to keep the single-file build. Modern Chrome/Edge install from manifest alone; if offline-caching guarantees are ever needed, ship an extra `sw.js` next to the HTML (breaks "single file" rule) and register it guarded by `location.protocol.startsWith('http')`.
+- **iOS touch icon** — `apple-touch-icon` is a data URI; iOS may ignore it. Needs a real 180x180 PNG file if we ever ship static assets alongside the HTML.
+
+### Replay system (round 2 #9, not yet built)
+- Seeded replay only reproduces while the **simulation code is byte-identical** — any physics/AI/powerup/timestep change desyncs old replays. Mitigations: stamp replays with a sim version/build hash and refuse mismatches, or record periodic state snapshots + inputs instead of pure re-simulation.
+- Requires a **fixed timestep** for the sim; current loop uses variable rAF `dt`.
+
+
