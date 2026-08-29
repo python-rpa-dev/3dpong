@@ -78,10 +78,13 @@ describe('Boss mode', () => {
     withBoss.boss = BOSSES.find(b => b.id === 'metronome');
     const plain = new Game(makeSettings());
     plain.start();
+    plain.boss = null;
     toPlaying(plain);
 
     function forcePlayerHit(game) {
       const ball = game.ball;
+      expect(game.state).toBe('PLAYING');
+      game.hitStopTimer = 0;
       ball.speed = CONFIG.ball.initialSpeed;
       ball.x = game.playerPaddle.x;
       ball.z = CONFIG.paddle.playerZ + ball.radius + 0.05;
