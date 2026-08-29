@@ -158,7 +158,8 @@ body {
 }
 
 .setting-row select option {
-  background: #1a1a3e;
+  background: #f2f4ff;
+  color: #16163a;
 }
 
 /* Combo display - right side */
