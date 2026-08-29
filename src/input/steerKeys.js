@@ -1,4 +1,13 @@
 /**
+ * Flip a steering direction when the view is side-swapped, so left/right keys
+ * keep matching what the player sees on screen.
+ */
+export function applySwap(dir, swapped) {
+  if (!swapped || dir !== 'left' && dir !== 'right') return dir;
+  return dir === 'left' ? 'right' : 'left';
+}
+
+/**
  * Remap steering keys when vertical steer is active.
  * Up behaves like Right did, down like left (matching mouse/stick conventions).
  */

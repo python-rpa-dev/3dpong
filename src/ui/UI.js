@@ -1,6 +1,6 @@
 import { CONFIG } from '../config.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
-import { remapSteerKey } from '../input/steerKeys.js';
+import { remapSteerKey, applySwap } from '../input/steerKeys.js';
 
 export class UI {
   constructor(game, settings) {
@@ -280,6 +280,7 @@ export class UI {
 
   onKeyDown(e) {
     const vertical = this.settings.get('steerAxis') === 'vertical';
+    const swapped = this.settings.get('sideSwap');
     const key = remapSteerKey(e.key, vertical);
     const versus = this.settings.get('playerMode') === 'versus';
     const leftPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
@@ -287,15 +288,15 @@ export class UI {
 
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
       if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey('left', true);
+        this.game.playerPaddle.setKey(applySwap('left', swapped), true);
       } else {
-        leftPaddle.setKey('left', true);
+        leftPaddle.setKey(applySwap('left', swapped), true);
       }
     } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey('right', true);
+        this.game.playerPaddle.setKey(applySwap('right', swapped), true);
       } else {
-        rightPaddle.setKey('right', true);
+        rightPaddle.setKey(applySwap('right', swapped), true);
       }
     } else if (key === ' ' || key === 'p' || key === 'P') {
       e.preventDefault();
@@ -321,19 +322,20 @@ export class UI {
 
   onKeyUp(e) {
     const vertical = this.settings.get('steerAxis') === 'vertical';
+    const swapped = this.settings.get('sideSwap');
     const key = remapSteerKey(e.key, vertical);
     const versus = this.settings.get('playerMode') === 'versus';
     if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
       if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey('left', false);
+        this.game.playerPaddle.setKey(applySwap('left', swapped), false);
       } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey('left', false);
+        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('left', swapped), false);
       }
     } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
       if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey('right', false);
+        this.game.playerPaddle.setKey(applySwap('right', swapped), false);
       } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey('right', false);
+        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('right', swapped), false);
       }
     }
   }

@@ -38,6 +38,15 @@ describe('GamepadInput', () => {
     expect(game.playerPaddle.targetX).toBeNull();
   });
 
+  it('side swap mirrors the stick so steering matches the screen', () => {
+    const game = new Game(makeSettings({ sideSwap: true }));
+    const input = new GamepadInput(game);
+    input.setProvider(() => [{ axes: [1], buttons: [] }]);
+    const x0 = game.playerPaddle.x;
+    input.update(1 / 60);
+    expect(game.playerPaddle.targetX).toBeGreaterThan(x0); // mirrored view: stick right now increases x
+  });
+
   it('vertical steer axis maps stick up to screen right', () => {
     const game = new Game(makeSettings({ steerAxis: 'vertical' }));
     const input = new GamepadInput(game);

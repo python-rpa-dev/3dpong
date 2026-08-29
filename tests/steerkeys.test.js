@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { remapSteerKey } from '../src/input/steerKeys.js';
+import { remapSteerKey, applySwap } from '../src/input/steerKeys.js';
+
+describe('applySwap', () => {
+  it('flips left/right when swapped', () => {
+    expect(applySwap('left', true)).toBe('right');
+    expect(applySwap('right', true)).toBe('left');
+  });
+
+  it('is a no-op otherwise', () => {
+    expect(applySwap('left', false)).toBe('left');
+    expect(applySwap('up', true)).toBe('up');
+  });
+});
 
 describe('remapSteerKey', () => {
   it('passes keys through in horizontal mode', () => {

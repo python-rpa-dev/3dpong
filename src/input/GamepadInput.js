@@ -49,6 +49,8 @@ export class GamepadInput {
         }
       }
       if (!axis) continue;
+      // Under a side swap the screen is mirrored; flip stick/dpad so it matches what the player sees.
+      if (this.game.settings?.get('sideSwap')) axis = -axis;
       const paddle = paddles[i];
       if (typeof paddle.setWorldTarget !== 'function') continue; // AI-controlled in this mode
       // World +x is screen-left under this camera, so stick-right decreases x
