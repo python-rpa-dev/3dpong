@@ -64,14 +64,17 @@
 
     <div id="settings-screen" class="screen hidden">
       <h2>SETTINGS</h2>
-      <div class="setting-row">
+      <div class="settings-scroll">
+      <div class="settings-group">
+        <h3>MATCH</h3>
+        <div class="setting-row">
         <label>Opponent</label>
         <select id="setting-playermode">
           <option value="ai" selected>vs CPU</option>
           <option value="versus">2 Players (local)</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Difficulty</label>
         <select id="setting-difficulty">
           <option value="easy">Easy</option>
@@ -79,7 +82,7 @@
           <option value="hard">Hard</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Win Score</label>
         <select id="setting-winscore">
           <option value="5">5</option>
@@ -88,7 +91,7 @@
           <option value="15">15</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Game Mode</label>
         <select id="setting-gamemode">
           <option value="classic">Classic (Dull)</option>
@@ -96,45 +99,21 @@
           <option value="boss">Boss Rush (special AI rules)</option>
         </select>
       </div>
-      <div class="setting-row">
+        <div class="setting-row">
         <label>Deuce (win by 2)</label>
         <select id="setting-deuce">
           <option value="true" selected>On</option>
           <option value="false">Off</option>
         </select>
       </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-bloom" checked>
-          Bloom glow (neon post-processing)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-catchmode">
-          Catch mode (slower returns — beginner assist)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-music" checked>
-          Rally music (builds with combo)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
-        <label>
-          <input type="checkbox" id="setting-gamepad" checked>
-          Gamepad support (pad 1 = P1, pad 2 = P2 in versus)
-        </label>
-      </div>
-      <div class="setting-row checkbox-row">
+        <div class="setting-row checkbox-row">
         <label>
           <input type="checkbox" id="setting-daily">
           Daily challenge (same random seed for everyone today)
         </label>
       </div>
-      <div id="fun-settings">
-        <h3 class="fun-label">FUN MODE EXTRAS</h3>
+      <div id="fun-settings" class="settings-group">
+        <h3>RALLY CHAOS (fun mode)</h3>
         <div class="setting-row checkbox-row">
           <label>
             <input type="checkbox" id="setting-powerups" checked>
@@ -166,7 +145,39 @@
           </label>
         </div>
       </div>
-      <button id="btn-save-settings" class="neon-btn">SAVE</button>
+      </div>
+      <div class="settings-group">
+        <h3>LOOK & SOUND</h3>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-bloom" checked>
+          Bloom glow (neon post-processing)
+        </label>
+      </div>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-music" checked>
+          Rally music (builds with combo)
+        </label>
+      </div>
+      </div>
+      <div class="settings-group">
+        <h3>CONTROLS</h3>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-catchmode">
+          Catch mode (slower returns — beginner assist)
+        </label>
+      </div>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-gamepad" checked>
+          Gamepad support (pad 1 = P1, pad 2 = P2 in versus)
+        </label>
+      </div>
+      </div>
+      
+<button id="btn-save-settings" class="neon-btn">SAVE</button>
       <button id="btn-back" class="neon-btn">BACK</button>
     </div>
   </div>
