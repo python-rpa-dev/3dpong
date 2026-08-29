@@ -96,6 +96,9 @@ export const CONFIG = {
     types: ['wide', 'shrink', 'slowmo', 'double', 'ghost', 'freeze'],
     colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00, ghost: 0x9d7bff, freeze: 0x88ddff },
   },
+  drafts: {
+    every: 5,
+  },
   fun: {
     spinFactor: 0.6,
     speedRampPerHit: 0.03,

@@ -51,7 +51,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Gameplay depth
 
-1. **Powerup drafts** — after a 5-rally, pick 1 of 2 random powerups to keep for your next hit (deckbuilding layer).
+1. ✅ **Powerup drafts** — after a 5-rally, pick 1 of 2 random powerups to keep for your next hit (deckbuilding layer).
 2. **Hazard zones** — random court tiles that speed up / slow / curve the ball for one bounce; telegraphed with floor glow.
 3. **Curve/spin shot** — paddle-edge contact bends the ball path; aim skill without vertical physics (velocity stays planar).
 4. **Multi-stage AI difficulty** — AI ramps reaction/error within a game when losing, eases when winning (rubber-band tension).

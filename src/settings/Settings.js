@@ -7,6 +7,7 @@ const DEFAULTS = {
   gameMode: 'fun',
   playerMode: 'ai',
   powerups: true,
+  drafts: true,
   multiBall: true,
   paddleShifts: true,
   aiTaunts: true,

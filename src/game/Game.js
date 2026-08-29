@@ -17,6 +17,7 @@ const STATES = {
   GAME_OVER: 'GAME_OVER',
   PAUSED: 'PAUSED',
   MENU: 'MENU',
+  DRAFT: 'DRAFT',
 };
 
 export class Game {
@@ -55,6 +56,8 @@ export class Game {
     this.boss = null;
     this._bossTimer = 0;
     this.rng = Math.random;
+    this.stockedPowerup = null;
+    this._pendingDraft = null;
   }
 
   isFunMode() {
@@ -122,6 +125,31 @@ export class Game {
 
   powerupsEnabled() {
     return this.isFunMode() && this.settings.get('powerups');
+  }
+
+  draftsEnabled() {
+    return this.powerupsEnabled() && this.settings.get('drafts');
+  }
+
+  /** Offer a pick-of-two powerup draft every Nth rally hit. */
+  maybeOfferDraft() {
+    if (!this.draftsEnabled() || this._pendingDraft) return;
+    if (this.rallyCombo % CONFIG.drafts.every !== 0) return;
+    const types = [...CONFIG.powerups.types];
+    const a = Math.floor(this.rng() * types.length);
+    let b = Math.floor(this.rng() * (types.length - 1));
+    if (b >= a) b++;
+    this._pendingDraft = [types[a], types[b]];
+    this.state = STATES.DRAFT;
+    this.events.push({ type: 'draft', options: this._pendingDraft });
+  }
+
+  /** Resolve the draft with a powerup type or null to skip. */
+  chooseDraft(type) {
+    if (this.state !== STATES.DRAFT || !this._pendingDraft) return;
+    if (type && this._pendingDraft.includes(type)) this.stockedPowerup = type;
+    this._pendingDraft = null;
+    this.state = STATES.PLAYING;
   }
 
   tauntsEnabled() {
@@ -221,6 +249,8 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.powerups.reset();
+    this.stockedPowerup = null;
+    this._pendingDraft = null;
     this.serveDirection = this.rng() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
@@ -250,6 +280,8 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.powerups.reset();
+    this.stockedPowerup = null;
+    this._pendingDraft = null;
     this.applyModifiers();
   }
 
@@ -353,6 +385,13 @@ export class Game {
           this.bossShrinkPlayer();
         }
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
+        if (this.stockedPowerup) {
+          const stocked = this.stockedPowerup;
+          this.stockedPowerup = null;
+          this.applyPowerup(stocked, 'player');
+        } else {
+          this.maybeOfferDraft();
+        }
       }
 
       // AI paddle bounce
@@ -367,6 +406,7 @@ export class Game {
         this.recordRally();
         this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
+        this.maybeOfferDraft();
       }
 
       // Multi-ball trigger: spawn a second ball at the combo threshold (once per rally)

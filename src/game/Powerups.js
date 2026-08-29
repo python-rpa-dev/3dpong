@@ -1,5 +1,15 @@
 import { CONFIG } from '../config.js';
 
+export const POWERUP_INFO = {
+  wide: { label: 'WIDE PADDLE', desc: '+60% paddle width for 6s' },
+  shrink: { label: 'SHRINK FOE', desc: 'Shrinks opponent paddle 6s' },
+  slowmo: { label: 'SLOW-MO', desc: 'Slows everything 3s' },
+  double: { label: 'DOUBLE POINTS', desc: 'Next 2 goals count double' },
+  ghost: { label: 'GHOST BALL', desc: 'Ball fades on their side 4s' },
+  freeze: { label: 'FREEZE', desc: 'Locks opponent paddle 1.2s' },
+};
+
+
 export class PowerupManager {
   constructor(rng = Math.random) {
     this.rng = rng;
