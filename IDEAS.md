@@ -76,3 +76,16 @@ Implement one at a time on `dev`, commit each separately.
 14. **Share cards** — end screen emits a text/PNG result card ("21-17 vs Metronome, best 14-rally, seed 20260829").
 15. **Replay theater** — watch input-log replays with camera controls (builds on round 2 #9).
 
+---
+
+## Caveats & known limitations
+
+### PWA / mobile install (shipped in `779efd8`)
+- **No service worker** — intentionally skipped to keep the single-file build. Modern Chrome/Edge install from manifest alone; if offline-caching guarantees are ever needed, ship an extra `sw.js` next to the HTML (breaks "single file" rule) and register it guarded by `location.protocol.startsWith('http')`.
+- **iOS touch icon** — `apple-touch-icon` is a data URI; iOS may ignore it. Needs a real 180x180 PNG file if we ever ship static assets alongside the HTML.
+
+### Replay system (round 2 #9, not yet built)
+- Seeded replay only reproduces while the **simulation code is byte-identical** — any physics/AI/powerup/timestep change desyncs old replays. Mitigations: stamp replays with a sim version/build hash and refuse mismatches, or record periodic state snapshots + inputs instead of pure re-simulation.
+- Requires a **fixed timestep** for the sim; current loop uses variable rAF `dt`.
+
+
