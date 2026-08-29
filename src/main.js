@@ -13,6 +13,7 @@ import { Audio } from './audio/Audio.js';
 import { Settings } from './settings/Settings.js';
 import { Records } from './settings/Records.js';
 import { GamepadInput } from './input/GamepadInput.js';
+import { effectiveYaw } from './scene/cameraPose.js';
 
 const canvas = document.getElementById('game-canvas');
 const settings = new Settings();
@@ -33,6 +34,8 @@ ui.setRecords(records);
 ui.setScreenToWorld((clientX, clientY) =>
   camera.screenToWorldX(clientX, clientY, window.innerWidth, window.innerHeight, CONFIG.paddle.playerZ)
 );
+
+ui.onViewControls((v) => camera.setView(effectiveYaw(v.yaw, v.swapped), v.tilt));
 
 const gamepadInput = new GamepadInput(game);
 

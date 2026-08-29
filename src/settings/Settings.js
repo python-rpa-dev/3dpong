@@ -16,6 +16,9 @@ const DEFAULTS = {
   music: true,
   gamepad: true,
   dailyChallenge: false,
+  viewYaw: 0,
+  viewTilt: 0,
+  sideSwap: false,
 };
 
 export class Settings {
