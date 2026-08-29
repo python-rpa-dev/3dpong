@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { poseFor, clampView, effectiveYaw, VIEW_LIMITS } from '../src/scene/cameraPose.js';
+import { poseFor, clampView, effectiveYaw, VIEW_LIMITS, minFovToContain, MIN_ZOOM_REDUCTION } from '../src/scene/cameraPose.js';
 import { CONFIG } from '../src/config.js';
 
 const base = CONFIG.camera;
@@ -37,6 +37,48 @@ describe('cameraPose', () => {
   it('effectiveYaw adds the half turn when swapped', () => {
     expect(effectiveYaw(30, false)).toBe(30);
     expect(effectiveYaw(30, true)).toBe(210);
+  });
+
+  describe('minFovToContain', () => {
+    it('returns the base fov when content already fills the frame', () => {
+      expect(minFovToContain(60, 1)).toBeCloseTo(60, 6);
+      expect(minFovToContain(60, 0.4)).toBeLessThan(60); // room to zoom
+    });
+
+    it('shrinks monotonically with extent', () => {
+      const a = minFovToContain(60, 0.9);
+      const b = minFovToContain(60, 0.7);
+      expect(b).toBeLessThan(a);
+      expect(b).toBeGreaterThan(MIN_ZOOM_REDUCTION * 40); // stays sane
+    });
+
+    it('clamped fov actually contains the court (verified by projection)', () => {
+      const p = poseFor(base.position, base.lookAt, 180, VIEW_LIMITS.tiltMin);
+      const cam = new THREE.PerspectiveCamera(60, 4 / 3, 0.1, 100);
+      cam.position.set(p.position.x, p.position.y, p.position.z);
+      cam.lookAt(p.lookAt.x, p.lookAt.y, p.lookAt.z);
+      cam.updateMatrixWorld();
+      cam.updateProjectionMatrix();
+      let e = 0;
+      for (const x of [-10, 10]) for (const z of [-15, 15]) {
+        for (const y of [0, 2]) {
+          const v = new THREE.Vector3(x, y, z).project(cam);
+          e = Math.max(e, Math.abs(v.x), Math.abs(v.y));
+        }
+      }
+      const cam2 = new THREE.PerspectiveCamera(minFovToContain(60, e) * 1.001, 4 / 3, 0.1, 100);
+      cam2.position.copy(cam.position);
+      cam2.quaternion.copy(cam.quaternion);
+      cam2.updateMatrixWorld();
+      cam2.updateProjectionMatrix();
+      for (const x of [-10, 10]) for (const z of [-15, 15]) {
+        for (const y of [0, 2]) {
+          const v = new THREE.Vector3(x, y, z).project(cam2);
+          expect(Math.abs(v.x)).toBeLessThanOrEqual(1.001);
+          expect(Math.abs(v.y)).toBeLessThanOrEqual(1.001);
+        }
+      }
+    });
   });
 
   describe('all court corners stay in frame', () => {

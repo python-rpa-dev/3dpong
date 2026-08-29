@@ -18,6 +18,7 @@ const DEFAULTS = {
   dailyChallenge: false,
   viewYaw: 0,
   viewTilt: 0,
+  viewZoom: 0,
   sideSwap: false,
 };
 

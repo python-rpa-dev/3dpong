@@ -42,23 +42,28 @@ export class UI {
     // View angle controls (in-viewport)
     this.viewYawEl = document.getElementById('view-yaw');
     this.viewTiltEl = document.getElementById('view-tilt');
+    this.viewZoomEl = document.getElementById('view-zoom');
     this.swapSidesBtn = document.getElementById('btn-swap-sides');
     this.viewYawEl.value = String(settings.get('viewYaw'));
     this.viewTiltEl.value = String(Math.round(settings.get('viewTilt') * 100));
+    this.viewZoomEl.value = String(Math.round(settings.get('viewZoom') * 100));
     this.updateSwapButton();
     const emitView = () => {
       const v = {
         yaw: Number(this.viewYawEl.value),
         tilt: Number(this.viewTiltEl.value) / 100,
+        zoom: Number(this.viewZoomEl.value) / 100,
         swapped: this.settings.get('sideSwap'),
       };
       this.settings.set('viewYaw', v.yaw);
       this.settings.set('viewTilt', v.tilt);
+      this.settings.set('viewZoom', v.zoom);
       this.settings.save();
       if (this.onViewControlsCb) this.onViewControlsCb(v);
     };
     this.viewYawEl.addEventListener('input', emitView);
     this.viewTiltEl.addEventListener('input', emitView);
+    this.viewZoomEl.addEventListener('input', emitView);
     this.swapSidesBtn.addEventListener('click', () => {
       this.settings.set('sideSwap', !this.settings.get('sideSwap'));
       this.settings.save();
@@ -358,6 +363,7 @@ export class UI {
     cb({
       yaw: Number(this.viewYawEl.value),
       tilt: Number(this.viewTiltEl.value) / 100,
+      zoom: Number(this.viewZoomEl.value) / 100,
       swapped: this.settings.get('sideSwap'),
     });
   }

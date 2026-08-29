@@ -26,6 +26,18 @@ export function effectiveYaw(sliderDeg, swapped) {
   return sliderDeg + (swapped ? 180 : 0);
 }
 
+/** Maximum FOV reduction at full zoom (before the no-clip clamp kicks in). */
+export const MIN_ZOOM_REDUCTION = 0.3;
+
+/**
+ * Smallest fov that still contains content whose max NDC extent at baseFov is maxExtent.
+ * NDC scales with 1/tan(fov/2), so this inversion is exact for both axes.
+ */
+export function minFovToContain(baseFovDeg, maxExtent) {
+  const half = Math.tan((baseFovDeg * Math.PI) / 360) * Math.max(maxExtent, 0);
+  return (2 * Math.atan(half) * 180) / Math.PI;
+}
+
 /**
  * @param {{x,y,z}} basePos CONFIG.camera.position
  * @param {{x,y,z}} baseLook CONFIG.camera.lookAt

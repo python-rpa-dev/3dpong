@@ -35,7 +35,10 @@ ui.setScreenToWorld((clientX, clientY) =>
   camera.screenToWorldX(clientX, clientY, window.innerWidth, window.innerHeight, CONFIG.paddle.playerZ)
 );
 
-ui.onViewControls((v) => camera.setView(effectiveYaw(v.yaw, v.swapped), v.tilt));
+ui.onViewControls((v) => {
+  camera.setView(effectiveYaw(v.yaw, v.swapped), v.tilt);
+  camera.setZoom(v.zoom);
+});
 
 const gamepadInput = new GamepadInput(game);
 
