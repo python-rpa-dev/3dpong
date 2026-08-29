@@ -22,11 +22,11 @@ export const CONFIG = {
     moveSpeed: 12,
   },
   camera: {
-    fov: 55,
+    fov: 60,
     near: 0.1,
     far: 100,
-    position: { x: 14, y: 22, z: -14 },
-    lookAt: { x: 0, y: 0, z: 0 },
+    position: { x: 10, y: 27, z: -21 },
+    lookAt: { x: 0, y: 0, z: -3 },
   },
   colors: {
     background: 0x0a0a1a,
