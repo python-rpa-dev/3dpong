@@ -200,7 +200,7 @@ export class UI {
         this.opponentScoreEl.textContent = this.game.score.opponentScore;
 
         // Combo display (fun mode only)
-        if (this.game.isFunMode() && this.game.rallyCombo > 1) {
+        if ((this.game.isFunMode() || this.game.isBossMode()) && this.game.rallyCombo > 1) {
           this.comboDisplay.classList.remove('hidden');
           this.comboCountEl.textContent = this.game.rallyCombo;
           // Color shifts with combo

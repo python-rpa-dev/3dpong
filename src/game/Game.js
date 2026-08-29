@@ -61,6 +61,10 @@ export class Game {
     return this.settings.get('gameMode') === 'fun';
   }
 
+  isBossMode() {
+    return this.settings.get('gameMode') === 'boss';
+  }
+
   isVersus() {
     return this.settings.get('playerMode') === 'versus';
   }
