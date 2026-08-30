@@ -362,6 +362,13 @@ export class Game {
             this.state = STATES.GAME_OVER;
             this.winner = winner;
             if (this.records) this.records.noteResult(winner === 'player');
+            if (this.records && this.settings.get('dailyChallenge')) {
+              this.records.noteDaily(dailySeed(), {
+                won: winner === 'player',
+                margin: this.score.playerScore - this.score.opponentScore,
+                rally: this.maxRallyCombo,
+              });
+            }
             if (winner === 'player' && this.achievementsEnabled()) {
               this.tryUnlock('first_win');
               if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');

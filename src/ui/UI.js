@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { dailySeed } from '../game/rng.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
 import { remapSteerKey, applySwap } from '../input/steerKeys.js';
 import { POWERUP_INFO } from '../game/Powerups.js';
@@ -280,6 +281,18 @@ export class UI {
       this.gameoverText.style.color = playerWins ? '#00e5ff' : '#ff2d95';
       this.finalScoreEl.textContent = this.game.score.display;
       this.gameoverScreen.classList.remove('hidden');
+      const tEl = document.getElementById('gameover-trophies');
+      if (tEl) {
+        if (this.game.achievementsEnabled()) {
+          const locked = ACHIEVEMENTS.filter((a) => !this.records.has(a.id));
+          tEl.textContent = locked.length === 0
+            ? 'ALL TROPHIES UNLOCKED'
+            : `TROPHY HINTS · ${locked.map((a) => `${a.label}: ${a.hint}`).join(' · ')}`;
+          tEl.classList.remove('hidden');
+        } else {
+          tEl.classList.add('hidden');
+        }
+      }
     } else {
       // PLAYING, SERVE, SCORED
       this.hideAllScreens();
@@ -413,6 +426,17 @@ export class UI {
     } else {
       el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
       el.classList.remove('hidden');
+    }
+    const dayEl = document.getElementById('menu-daily');
+    if (dayEl) {
+      const d = this.records.daily(dailySeed());
+      if (!d) {
+        dayEl.classList.add('hidden');
+      } else {
+        const m = d.bestMargin;
+        dayEl.textContent = `TODAY · ${d.plays} PLAY${d.plays > 1 ? 'S' : ''} · ${d.wins}W-${d.plays - d.wins}L · BEST ${m >= 0 ? '+' + m : m} · RALLY ${d.bestRally}`;
+        dayEl.classList.remove('hidden');
+      }
     }
     const achEl = document.getElementById('menu-achievements');
     if (achEl) {

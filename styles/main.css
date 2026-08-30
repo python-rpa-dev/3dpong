@@ -9,6 +9,17 @@ body {
   color: #fff;
 }
 
+#build-tag {
+  position: fixed;
+  right: 8px;
+  bottom: 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  z-index: 20;
+}
+
 #game-canvas {
   display: block;
   width: 100vw;
