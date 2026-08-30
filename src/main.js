@@ -15,6 +15,11 @@ import { Records } from './settings/Records.js';
 import { GamepadInput } from './input/GamepadInput.js';
 import { effectiveYaw } from './scene/cameraPose.js';
 
+const buildTag = document.getElementById('build-tag');
+if (buildTag) {
+  buildTag.textContent = typeof __BUILD_VERSION__ !== 'undefined' ? __BUILD_VERSION__ : 'dev';
+}
+
 const canvas = document.getElementById('game-canvas');
 const settings = new Settings();
 const records = new Records();
