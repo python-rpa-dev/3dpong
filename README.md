@@ -53,3 +53,4 @@ npx vitest run    # unit + integration tests
 | [`pong3d-spec.md`](pong3d-spec.md) | Authoritative spec — behavior questions end here |
 | [`AGENTS.md`](AGENTS.md) | Module map, interface contracts, build/test workflow |
 | [`IDEAS.md`](IDEAS.md) | Improvement backlog (implemented items are ticked) |
+| [`docs/seeds.md`](docs/seeds.md) | How seeded randomness is wired, and its limits |
