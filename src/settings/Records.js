@@ -15,6 +15,7 @@ const DEFAULTS = {
   wins: 0,
   losses: 0,
   achievements: {},
+  dailies: {},
 };
 
 export class Records {
@@ -28,9 +29,9 @@ export class Records {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        this.data = { ...DEFAULTS, ...parsed, achievements: { ...(parsed.achievements || {}) } };
+        this.data = { ...DEFAULTS, ...parsed, achievements: { ...(parsed.achievements || {}) }, dailies: { ...(parsed.dailies || {}) } };
       } else {
-        this.data = { ...DEFAULTS, achievements: {} };
+        this.data = { ...DEFAULTS, achievements: {}, dailies: {} };
       }
     } catch (e) {
       this.data = { ...DEFAULTS, achievements: {} };
@@ -67,6 +68,21 @@ export class Records {
     if (playerWon) this.data.wins++;
     else this.data.losses++;
     this.save();
+  }
+
+  /** Record a daily-challenge result under its date seed (e.g. 20260830). */
+  noteDaily(seed, { won, margin, rally }) {
+    const day = this.data.dailies[seed] || { plays: 0, wins: 0, bestMargin: null, bestRally: 0 };
+    day.plays++;
+    if (won) day.wins++;
+    if (day.bestMargin === null || margin > day.bestMargin) day.bestMargin = margin;
+    if (rally > day.bestRally) day.bestRally = rally;
+    this.data.dailies[seed] = day;
+    this.save();
+  }
+
+  daily(seed) {
+    return this.data.dailies[seed] || null;
   }
 
   has(id) {

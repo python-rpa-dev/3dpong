@@ -28,7 +28,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Quick wins (small)
 
-1. **Daily challenge scoring** — best result per date-keyed seed in Records; "today's run" line on the menu. Completes mode #10, which currently only seeds the RNG.
+1. ✅ **Daily challenge scoring** — best result per date-keyed seed in Records; "today's run" line on the menu. Completes mode #10, which currently only seeds the RNG.
 2. **Accessibility sliders** — screen-shake intensity, colorblind-safe trail palette option, master-volume hotkey.
 3. **Pause-menu restart + match stats** — restart button and current-match readout (longest rally, top speed, grazes).
 
