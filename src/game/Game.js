@@ -43,6 +43,7 @@ export class Game {
     this.timeScale = 1;
     this.activeEffects = [];
     this.resetPointBoost();
+    this._peakDoubleMult = 1;
     this.hitStopTimer = 0;
     this.serveAimX = 0;
     this._tauntedImpressed = false;
@@ -124,6 +125,23 @@ export class Game {
 
   powerupsEnabled() {
     return this.isFunMode() && this.settings.get('powerups');
+  }
+
+  /** Cross-match carry; never in versus or dailies (daily scores must stay comparable). */
+  loadoutEnabled() {
+    return this.powerupsEnabled() && !!this.records && !this.isVersus() && !this.settings.get('dailyChallenge');
+  }
+
+  /** Restore the banked double-points multiplier into a fresh match. */
+  seedLoadout() {
+    this._peakDoubleMult = 1;
+    if (!this.loadoutEnabled()) return;
+    const mult = Math.min(Math.max(1, this.records.loadoutMult('double')), CONFIG.powerups.doubleMaxMult);
+    if (mult <= 1) return;
+    const goalsLeft = CONFIG.powerups.loadoutGoals;
+    this.doublePoints.player = { mult, goalsLeft };
+    this.activeEffects.push({ type: 'double', target: 'player', goalsLeft, mult });
+    this._peakDoubleMult = mult;
   }
 
   draftsEnabled() {
@@ -273,6 +291,7 @@ export class Game {
     this.stockedPowerup = null;
     this._pendingDraft = null;
     this._draftTimer = 0;
+    this.seedLoadout();
     this.serveDirection = this.rng() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
@@ -361,6 +380,10 @@ export class Game {
             this.state = STATES.GAME_OVER;
             this.winner = winner;
             if (this.records) this.records.noteResult(winner === 'player');
+            if (this.loadoutEnabled()) {
+              const banked = Math.max(this.records.loadoutMult('double'), this._peakDoubleMult);
+              this.records.setLoadoutMult('double', banked);
+            }
             if (this.records && this.settings.get('dailyChallenge')) {
               this.records.noteDaily(dailySeed(), {
                 won: winner === 'player',
@@ -508,6 +531,7 @@ export class Game {
       const boost = this.doublePoints[target];
       boost.mult = Math.min(boost.mult * 2, cfg.doubleMaxMult);
       boost.goalsLeft = Math.max(boost.goalsLeft, cfg.doublePointsGoals);
+      if (target === 'player') this._peakDoubleMult = Math.max(this._peakDoubleMult, boost.mult);
       // One marker per side so the HUD reflects the current stack
       this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === target));
       this.activeEffects.push({ type, target, goalsLeft: boost.goalsLeft, mult: boost.mult });

@@ -16,6 +16,7 @@ const DEFAULTS = {
   losses: 0,
   achievements: {},
   dailies: {},
+  loadout: {},
 };
 
 export class Records {
@@ -29,12 +30,12 @@ export class Records {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        this.data = { ...DEFAULTS, ...parsed, achievements: { ...(parsed.achievements || {}) }, dailies: { ...(parsed.dailies || {}) } };
+        this.data = { ...DEFAULTS, ...parsed, achievements: { ...(parsed.achievements || {}) }, dailies: { ...(parsed.dailies || {}) }, loadout: { ...(parsed.loadout || {}) } };
       } else {
-        this.data = { ...DEFAULTS, achievements: {}, dailies: {} };
+        this.data = { ...DEFAULTS, achievements: {}, dailies: {}, loadout: {} };
       }
     } catch (e) {
-      this.data = { ...DEFAULTS, achievements: {} };
+      this.data = { ...DEFAULTS, achievements: {}, dailies: {}, loadout: {} };
     }
   }
 
@@ -101,7 +102,20 @@ export class Records {
   }
 
   reset() {
-    this.data = { ...DEFAULTS, achievements: {} };
+    this.data = { ...DEFAULTS, achievements: {}, dailies: {}, loadout: {} };
     this.save();
+  }
+
+  /** Banked cross-match multiplier for a powerup type (1 = none carried). */
+  loadoutMult(type) {
+    return this.data.loadout[type] || 1;
+  }
+
+  setLoadoutMult(type, mult) {
+    const next = Math.max(1, mult || 1);
+    if (this.data.loadout[type] === next) return false;
+    this.data.loadout[type] = next;
+    this.save();
+    return true;
   }
 }

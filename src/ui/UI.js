@@ -425,7 +425,8 @@ export class UI {
     if (r.bestRally === 0 && r.wins === 0 && r.losses === 0) {
       el.classList.add('hidden');
     } else {
-      el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
+      const carry = this.records.loadoutMult('double');
+      el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}${carry > 1 ? ` · DOUBLE x${carry}` : ''}`;
       el.classList.remove('hidden');
     }
     const dayEl = document.getElementById('menu-daily');
