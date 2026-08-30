@@ -98,6 +98,7 @@ export const CONFIG = {
   },
   drafts: {
     every: 5,
+    timeout: 3,
   },
   fun: {
     spinFactor: 0.6,

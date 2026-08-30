@@ -119,7 +119,11 @@ function gameLoop(time) {
         else audio.playNetGrazed();
         break;
       case 'draft':
-        ui.showDraft(evt.options);
+        ui.showDraft(evt.options, evt.timeout);
+        break;
+      case 'draftResolved':
+        ui.hideDraft();
+        if (evt.choice) ui.showPowerupToast(evt.choice, 'player');
         break;
       case 'netGrazed':
         audio.playNetGrazed();

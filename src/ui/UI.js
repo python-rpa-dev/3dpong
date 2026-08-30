@@ -95,19 +95,17 @@ export class UI {
 
     this.draftScreen = document.getElementById('draft-screen');
     this.draftCards = [document.getElementById('draft-0'), document.getElementById('draft-1')];
+    this.draftTimerFill = document.getElementById('draft-timer-fill');
     this._draftOptions = null;
+    // Hiding happens via the 'draftResolved' event so auto-picks close it too.
     this.draftCards.forEach((btn, i) => {
       btn.addEventListener('click', () => {
         const opt = this._draftOptions && this._draftOptions[i];
         this.game.chooseDraft(opt || null);
-        this._draftOptions = null;
-        this.draftScreen.classList.add('hidden');
       });
     });
     document.getElementById('draft-skip').addEventListener('click', () => {
       this.game.chooseDraft(null);
-      this._draftOptions = null;
-      this.draftScreen.classList.add('hidden');
     });
     document.getElementById('setting-gamemode').addEventListener('change', () => this.updateFunSettingsVisibility());
 
@@ -137,6 +135,9 @@ export class UI {
   resumeGame() {
     this.game.resume();
     this.hideAllScreens();
+    if (this.game.draftPending() && this._draftOptions) {
+      this.showDraft(this._draftOptions, this.game.draftRemaining());
+    }
     this.scoreDisplay.classList.remove('hidden');
   }
 
@@ -210,7 +211,7 @@ export class UI {
     this.comboDisplay.classList.add('hidden');
   }
 
-  showDraft(options) {
+  showDraft(options, seconds = CONFIG.drafts.timeout) {
     this._draftOptions = options;
     options.forEach((type, i) => {
       const info = POWERUP_INFO[type] || { label: type.toUpperCase(), desc: '' };
@@ -219,7 +220,17 @@ export class UI {
       this.draftCards[i].style.color = color;
       this.draftCards[i].style.borderColor = color;
     });
+    if (this.draftTimerFill) {
+      this.draftTimerFill.style.animation = 'none';
+      void this.draftTimerFill.offsetWidth; // restart the drain animation
+      this.draftTimerFill.style.animation = `draft-drain ${Math.max(0.05, seconds)}s linear forwards`;
+    }
     this.draftScreen.classList.remove('hidden');
+  }
+
+  hideDraft() {
+    this._draftOptions = null;
+    if (this.draftScreen) this.draftScreen.classList.add('hidden');
   }
 
   update() {
@@ -269,9 +280,6 @@ export class UI {
       this.gameoverText.style.color = playerWins ? '#00e5ff' : '#ff2d95';
       this.finalScoreEl.textContent = this.game.score.display;
       this.gameoverScreen.classList.remove('hidden');
-    } else if (state === 'DRAFT') {
-      // Draft screen is shown by showDraft() from the game event; do NOT
-      // hideAllScreens() here or the game freezes with no visible UI.
     } else {
       // PLAYING, SERVE, SCORED
       this.hideAllScreens();
@@ -350,9 +358,9 @@ export class UI {
         this.resumeGame();
       }
     } else if (key === 'Escape') {
-      if (this.game.state === 'DRAFT') {
+      if (this.game.draftPending()) {
         this.game.chooseDraft(null);
-        this.draftScreen.classList.add('hidden');
+        this.hideDraft();
       } else if (this.game.state === 'PLAYING') {
         this.game.pause();
       } else if (this.game.state === 'PAUSED') {
