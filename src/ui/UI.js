@@ -281,6 +281,18 @@ export class UI {
       this.gameoverText.style.color = playerWins ? '#00e5ff' : '#ff2d95';
       this.finalScoreEl.textContent = this.game.score.display;
       this.gameoverScreen.classList.remove('hidden');
+      const tEl = document.getElementById('gameover-trophies');
+      if (tEl) {
+        if (this.game.achievementsEnabled()) {
+          const locked = ACHIEVEMENTS.filter((a) => !this.records.has(a.id));
+          tEl.textContent = locked.length === 0
+            ? 'ALL TROPHIES UNLOCKED'
+            : `TROPHY HINTS · ${locked.map((a) => `${a.label}: ${a.hint}`).join(' · ')}`;
+          tEl.classList.remove('hidden');
+        } else {
+          tEl.classList.add('hidden');
+        }
+      }
     } else {
       // PLAYING, SERVE, SCORED
       this.hideAllScreens();

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Records } from '../src/settings/Records.js';
+import { Records, ACHIEVEMENTS } from '../src/settings/Records.js';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
 
@@ -86,5 +86,12 @@ describe('Records', () => {
     game.start();
     scorePlayer(game); // must not throw
     expect(game.score.playerScore).toBe(1);
+  });
+
+  it('every achievement has a discoverable hint', () => {
+    for (const a of ACHIEVEMENTS) {
+      expect(a.label).toBeTruthy();
+      expect(a.hint).toBeTruthy();
+    }
   });
 });

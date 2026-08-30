@@ -1,12 +1,12 @@
 const STORAGE_KEY = 'pong3d_records';
 
 export const ACHIEVEMENTS = [
-  { id: 'first_win', label: 'FIRST WIN' },
-  { id: 'rally20', label: '20-RALLY' },
-  { id: 'perfect_game', label: 'PERFECT GAME' },
-  { id: 'comeback', label: 'COMEBACK KING' },
-  { id: 'shrink_triple', label: 'SHRINK TRIPLE' },
-  { id: 'grazer_3', label: 'NET GRAZER x3' },
+  { id: 'first_win', label: 'FIRST WIN', hint: 'win a match vs the AI' },
+  { id: 'rally20', label: '20-RALLY', hint: 'reach a 20-hit rally' },
+  { id: 'perfect_game', label: 'PERFECT GAME', hint: 'win without letting the AI score' },
+  { id: 'comeback', label: 'COMEBACK KING', hint: 'win after trailing by 5+ points' },
+  { id: 'shrink_triple', label: 'SHRINK TRIPLE', hint: 'shrink the AI paddle 3x in one match' },
+  { id: 'grazer_3', label: 'NET GRAZER x3', hint: 'graze the net 3 times in one match' },
 ];
 
 const DEFAULTS = {
