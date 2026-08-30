@@ -5,7 +5,7 @@ import { Score } from './Score.js';
 import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
 import { pickPersonality } from './AIPersonality.js';
-import { pickBoss, BOSS_TUNING } from './Boss.js';
+import { pickBoss, bossRules, BOSS_TUNING } from './Boss.js';
 import { mulberry32, dailySeed } from './rng.js';
 import { CONFIG } from '../config.js';
 
@@ -237,24 +237,27 @@ export class Game {
 
   /** Boss special rules, ticked every frame during PLAYING. */
   tickBoss(dt) {
-    if (!this.boss) return;
-    if (this.boss.id === 'freezer') {
-      this._bossTimer += dt;
-      if (this._bossTimer >= BOSS_TUNING.freezerInterval) {
-        this._bossTimer = 0;
-        this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === 'player'));
-        this.activeEffects.push({ type: 'freeze', target: 'player', timeLeft: BOSS_TUNING.freezeDuration });
-        this.applyModifiers();
-        this.events.push({ type: 'boss', bossId: 'freezer', effect: 'freeze', label: this.boss.label });
-      }
+    const rules = bossRules(this.boss);
+    if (!rules || !rules.onInterval) return;
+    this._bossTimer += dt;
+    if (this._bossTimer >= rules.interval) {
+      this._bossTimer = 0;
+      rules.onInterval(this);
     }
+  }
+
+  bossFreeze(duration) {
+    this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === 'player'));
+    this.activeEffects.push({ type: 'freeze', target: 'player', timeLeft: duration });
+    this.applyModifiers();
+    this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'freeze', label: this.boss.label });
   }
 
   bossShrinkPlayer() {
     this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shrink' && e.target === 'player'));
     this.activeEffects.push({ type: 'shrink', target: 'player', scale: BOSS_TUNING.shrinkScale, timeLeft: BOSS_TUNING.shrinkDuration });
     this.applyModifiers();
-    this.events.push({ type: 'boss', bossId: 'shrinker', effect: 'shrink', label: this.boss.label });
+    this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'shrink', label: this.boss.label });
   }
 
   start() {
@@ -440,11 +443,10 @@ export class Game {
       // Player paddle bounce
       const playerHit = this.court.checkPaddleBounce(ball, this.playerPaddle, fun);
       if (playerHit) {
-        if (this.boss && this.boss.id === 'metronome') ball.increaseSpeed();
+        const rules = bossRules(this.boss);
+        if (rules && rules.beforePlayerHit) rules.beforePlayerHit(this, ball);
         this.registerPaddleHit('player', ball, playerHit.offset, fun);
-        if (this.boss && this.boss.id === 'shrinker' && this.rallyCombo % BOSS_TUNING.shrinkerHits === 0) {
-          this.bossShrinkPlayer();
-        }
+        if (rules && rules.afterPlayerHit) rules.afterPlayerHit(this);
         if (this.stockedPowerup) {
           const stocked = this.stockedPowerup;
           this.stockedPowerup = null;

@@ -17,3 +17,34 @@ export const BOSS_TUNING = {
   freezerInterval: 8,
   freezeDuration: 0.8,
 };
+
+/**
+ * Per-boss rule hooks invoked by Game during a rally. Rules decide policy;
+ * effects stay inside Game via its own helpers (bossShrinkPlayer, bossFreeze).
+ *
+ * - beforePlayerHit(game, ball): just before the return is registered
+ * - afterPlayerHit(game): just after the return is registered
+ * - interval + onInterval(game): fires every `interval` seconds of play
+ */
+export const BOSS_RULES = {
+  metronome: {
+    beforePlayerHit(game, ball) {
+      ball.increaseSpeed();
+    },
+  },
+  shrinker: {
+    afterPlayerHit(game) {
+      if (game.rallyCombo % BOSS_TUNING.shrinkerHits === 0) game.bossShrinkPlayer();
+    },
+  },
+  freezer: {
+    interval: BOSS_TUNING.freezerInterval,
+    onInterval(game) {
+      game.bossFreeze(BOSS_TUNING.freezeDuration);
+    },
+  },
+};
+
+export function bossRules(boss) {
+  return (boss && BOSS_RULES[boss.id]) || null;
+}
