@@ -35,7 +35,7 @@ Implement one at a time on `dev`, commit each separately.
 ### Medium
 
 4. ✅ **Touch controls** — drag-to-move paddle so the game works on phones/tablets.
-5. **Boss Rush ladder** — beat all three bosses in sequence with escalating difficulty instead of one random boss.
+5. ✅ **Boss Rush ladder** — beat all three bosses in sequence with escalating difficulty instead of one random boss.
 6. **Unlockable court skins** — palette variants tied to achievements.
 ✅ 7. **View angle sliders (viewport)** — horizontal/vertical sliders that orbit/pan the camera around the court (yaw + tilt), default = current pose, soft-animated transitions; keyboard aiming must stay correct at any angle.
 ✅ 8. **Side swap toggle** — button to trade places with the opponent (view from the far end); same pose system as #7 with a 180° yaw offset; default = current view.

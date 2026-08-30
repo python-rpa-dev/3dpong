@@ -8,6 +8,7 @@ export const ACHIEVEMENTS = [
   { id: 'shrink_triple', label: 'SHRINK TRIPLE', hint: 'shrink the AI paddle 3x in one match' },
   { id: 'grazer_3', label: 'NET GRAZER x3', hint: 'graze the net 3 times in one match' },
   { id: 'double_stack', label: 'DOUBLE STACK', hint: 'stack double points to x8 in one match (unlocks sudden death)' },
+  { id: 'ladder_clear', label: 'LADDER LEGEND', hint: 'beat all three bosses back-to-back in Boss Rush Ladder' },
 ];
 
 const DEFAULTS = {

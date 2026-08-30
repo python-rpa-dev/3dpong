@@ -251,7 +251,7 @@ export class UI {
         this.opponentScoreEl.textContent = this.game.score.opponentScore;
 
         // Combo display (fun mode only)
-        if ((this.game.isFunMode() || this.game.isBossMode()) && this.game.rallyCombo > 1) {
+        if ((this.game.isFunMode() || this.game.isBossMode() || this.game.isLadderMode()) && this.game.rallyCombo > 1) {
           this.comboDisplay.classList.remove('hidden');
           this.comboCountEl.textContent = this.game.rallyCombo;
           // Color shifts with combo
@@ -281,9 +281,14 @@ export class UI {
       this.scoreDisplay.classList.add('hidden');
       const versus = this.settings.get('playerMode') === 'versus';
       const playerWins = this.game.winner === 'player';
+      const ladder = this.game.isLadderMode();
       this.gameoverText.textContent = versus
         ? (playerWins ? 'PLAYER 1 WINS!' : 'PLAYER 2 WINS!')
-        : (playerWins ? 'YOU WIN!' : 'YOU LOSE!');
+        : playerWins
+          ? (ladder && this.game.ladderCleared ? 'LADDER CLEARED!' : 'YOU WIN!')
+          : ladder
+            ? `STAGE ${this.game.ladderStage + 1} — YOU LOSE!`
+            : 'YOU LOSE!';
       this.gameoverText.style.color = playerWins ? '#00e5ff' : '#ff2d95';
       this.finalScoreEl.textContent = this.game.score.display;
       this.gameoverScreen.classList.remove('hidden');

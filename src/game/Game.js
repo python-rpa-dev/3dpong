@@ -6,6 +6,7 @@ import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
 import { pickPersonality } from './AIPersonality.js';
 import { pickBoss, bossRules, BOSS_TUNING } from './Boss.js';
+import { bossFor, ladderStage as stageAt, LADDER } from './Encounters.js';
 import { mulberry32, dailySeed } from './rng.js';
 import { CONFIG } from '../config.js';
 
@@ -53,6 +54,9 @@ export class Game {
     this._shrinks = 0;
     this._minMargin = 0;
     this.boss = null;
+    this.encounter = null;
+    this.ladderStage = 0;
+    this.ladderCleared = false;
     this._bossTimer = 0;
     this.rng = Math.random;
     this.stockedPowerup = null;
@@ -66,6 +70,10 @@ export class Game {
 
   isBossMode() {
     return this.settings.get('gameMode') === 'boss';
+  }
+
+  isLadderMode() {
+    return this.settings.get('gameMode') === 'ladder';
   }
 
   isVersus() {
@@ -260,7 +268,15 @@ export class Game {
     this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'shrink', label: this.boss.label });
   }
 
+  /** Pin a specific encounter (ladder/story); null restores random-boss behaviour. */
+  setEncounter(encounter) {
+    this.encounter = encounter || null;
+  }
+
   start() {
+    if (this.state === STATES.MENU || this.state === STATES.GAME_OVER) this.ladderStage = 0;
+    this.ladderCleared = false;
+    if (this.isLadderMode()) this.encounter = stageAt(this.ladderStage);
     const versus = this.isVersus();
     if (versus) {
       this.personality = null;
@@ -281,7 +297,12 @@ export class Game {
     this._grazes = 0;
     this._shrinks = 0;
     this._minMargin = 0;
-    this.boss = this.settings.get('gameMode') === 'boss' ? pickBoss() : null;
+    if (this.encounter && this.aiPaddle instanceof AIPaddle) {
+      this.aiPaddle.setDifficulty(this.encounter.difficulty);
+    }
+    this.boss = this.encounter
+      ? bossFor(this.encounter)
+      : (this.settings.get('gameMode') === 'boss' ? pickBoss() : null);
     this._bossTimer = 0;
     this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
     this.powerups.rng = this.rng;
@@ -291,6 +312,8 @@ export class Game {
     this.score.deuce = suddenDeath ? false : this.settings.get('deuce');
     this.score.reset();
     this.balls = [new Ball()];
+    const speedFactor = this.encounter ? this.encounter.speedFactor || 1 : 1;
+    if (speedFactor !== 1) this.ball.baseSpeed = CONFIG.ball.initialSpeed * speedFactor;
     this.rallyCombo = 0;
     this.maxRallyCombo = 0;
     this.lastHitter = null;
@@ -307,7 +330,10 @@ export class Game {
     this.serveTimer = CONFIG.serve.delay;
     this.events.length = 0;
     if (this.boss) {
-      this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'intro', label: this.boss.label });
+      const label = this.isLadderMode()
+        ? `STAGE ${this.ladderStage + 1}/${LADDER.length} · ${this.boss.label}`
+        : this.boss.label;
+      this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'intro', label });
     }
   }
 
@@ -387,6 +413,12 @@ export class Game {
         if (this.scoreTimer <= 0) {
           const winner = this.score.checkWin();
           if (winner) {
+            // Ladder: a stage win advances to the next boss instead of ending the run
+            if (this.isLadderMode() && winner === 'player' && this.ladderStage + 1 < LADDER.length) {
+              this.ladderStage++;
+              this.start();
+              break;
+            }
             this.state = STATES.GAME_OVER;
             this.winner = winner;
             if (this.records) this.records.noteResult(winner === 'player');
@@ -401,10 +433,14 @@ export class Game {
                 rally: this.maxRallyCombo,
               });
             }
-            if (winner === 'player' && this.achievementsEnabled()) {
-              this.tryUnlock('first_win');
-              if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
-              if (this._minMargin <= -5) this.tryUnlock('comeback');
+            if (winner === 'player') {
+              if (this.isLadderMode()) this.ladderCleared = true;
+              if (this.achievementsEnabled()) {
+                this.tryUnlock('first_win');
+                if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
+                if (this._minMargin <= -5) this.tryUnlock('comeback');
+                if (this.isLadderMode()) this.tryUnlock('ladder_clear');
+              }
             }
             this.events.push({ type: 'gameOver', winner });
           } else {
