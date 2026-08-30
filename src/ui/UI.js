@@ -269,6 +269,9 @@ export class UI {
       this.gameoverText.style.color = playerWins ? '#00e5ff' : '#ff2d95';
       this.finalScoreEl.textContent = this.game.score.display;
       this.gameoverScreen.classList.remove('hidden');
+    } else if (state === 'DRAFT') {
+      // Draft screen is shown by showDraft() from the game event; do NOT
+      // hideAllScreens() here or the game freezes with no visible UI.
     } else {
       // PLAYING, SERVE, SCORED
       this.hideAllScreens();
