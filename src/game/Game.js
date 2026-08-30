@@ -48,7 +48,6 @@ export class Game {
     this._tauntedImpressed = false;
     this.pointStreak = 0;
     this._lastScorer = null;
-    this._gameOverSoundPlayed = false;
     this._grazes = 0;
     this._shrinks = 0;
     this._minMargin = 0;
@@ -374,6 +373,7 @@ export class Game {
               if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
               if (this._minMargin <= -5) this.tryUnlock('comeback');
             }
+            this.events.push({ type: 'gameOver', winner });
           } else {
             this.balls.length = 1;
             this.ball.reset(this.serveDirection, null, this.rng);
@@ -410,18 +410,11 @@ export class Game {
       // Player paddle bounce
       const playerHit = this.court.checkPaddleBounce(ball, this.playerPaddle, fun);
       if (playerHit) {
-        if (!fun) ball.increaseSpeed();
         if (this.boss && this.boss.id === 'metronome') ball.increaseSpeed();
-        this.rallyCombo++;
-        this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
-        this.lastHitter = 'player';
-        this.applyPaddleShift('player', playerHit.offset);
-        this.recordRally();
-        this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
+        this.registerPaddleHit('player', ball, playerHit.offset, fun);
         if (this.boss && this.boss.id === 'shrinker' && this.rallyCombo % BOSS_TUNING.shrinkerHits === 0) {
           this.bossShrinkPlayer();
         }
-        this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
         if (this.stockedPowerup) {
           const stocked = this.stockedPowerup;
           this.stockedPowerup = null;
@@ -434,15 +427,8 @@ export class Game {
       // AI paddle bounce
       const aiHit = this.court.checkPaddleBounce(ball, this.aiPaddle, fun);
       if (aiHit) {
-        if (!fun) ball.increaseSpeed();
+        this.registerPaddleHit('ai', ball, aiHit.offset, fun);
         if (this.settings.get('catchMode')) ball.applyCatchAssist(CONFIG.fun.catchSpeedFactor);
-        this.rallyCombo++;
-        this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
-        this.lastHitter = 'ai';
-        this.applyPaddleShift('ai', aiHit.offset);
-        this.recordRally();
-        this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
-        this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
         this.maybeOfferDraft();
       }
 
@@ -460,33 +446,50 @@ export class Game {
       // Score
       const scorer = this.court.checkScore(ball);
       if (scorer) {
-        const side = scorer === 'opponent' ? 'ai' : scorer;
-        const points = this.doublePoints[side] > 0 ? 2 : 1;
-        if (this.doublePoints[side] > 0) {
-          this.doublePoints[side]--;
-          if (this.doublePoints[side] === 0) {
-            this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === side));
-          }
-        }
-        this.score.addPoint(side, points);
-        this._minMargin = Math.min(this._minMargin, this.score.playerScore - this.score.opponentScore);
-        this.state = STATES.SCORED;
-        this.hitStopTimer = CONFIG.hitStop.score;
-        this.scoreTimer = CONFIG.serve.scoreDelay;
-        this.serveDirection = side === 'player' ? 1 : -1;
-        if (this.tauntsEnabled()) {
-          this.emitTaunt(side === 'ai' ? this.personality.win : this.personality.lose);
-        }
-        this._tauntedImpressed = false;
-        this.pointStreak = side === this._lastScorer ? this.pointStreak + 1 : 1;
-        this._lastScorer = side;
-        if (side === 'player' && this.records && this.records.noteStreak(this.pointStreak)) {
-          this.events.push({ type: 'record', kind: 'streak', value: this.pointStreak });
-        }
-        this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
+        this.endRally(ball, scorer);
         break; // rally over
       }
     }
+  }
+
+  /** Shared bookkeeping for a paddle return on either side. */
+  registerPaddleHit(side, ball, offset, fun) {
+    if (!fun) ball.increaseSpeed();
+    this.rallyCombo++;
+    this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
+    this.lastHitter = side;
+    this.applyPaddleShift(side, offset);
+    this.recordRally();
+    this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
+    this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: side, offset, combo: this.rallyCombo });
+  }
+
+  /** A ball left the court: apply points, streaks, taunts and state change. */
+  endRally(ball, scorer) {
+    const side = scorer === 'opponent' ? 'ai' : scorer;
+    const points = this.doublePoints[side] > 0 ? 2 : 1;
+    if (this.doublePoints[side] > 0) {
+      this.doublePoints[side]--;
+      if (this.doublePoints[side] === 0) {
+        this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === side));
+      }
+    }
+    this.score.addPoint(side, points);
+    this._minMargin = Math.min(this._minMargin, this.score.playerScore - this.score.opponentScore);
+    this.state = STATES.SCORED;
+    this.hitStopTimer = CONFIG.hitStop.score;
+    this.scoreTimer = CONFIG.serve.scoreDelay;
+    this.serveDirection = side === 'player' ? 1 : -1;
+    if (this.tauntsEnabled()) {
+      this.emitTaunt(side === 'ai' ? this.personality.win : this.personality.lose);
+    }
+    this._tauntedImpressed = false;
+    this.pointStreak = side === this._lastScorer ? this.pointStreak + 1 : 1;
+    this._lastScorer = side;
+    if (side === 'player' && this.records && this.records.noteStreak(this.pointStreak)) {
+      this.events.push({ type: 'record', kind: 'streak', value: this.pointStreak });
+    }
+    this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
   }
 
   applyPowerup(type, target) {

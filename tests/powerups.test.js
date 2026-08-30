@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { PowerupManager } from '../src/game/Powerups.js';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
+import { makeSettings as baseSettings } from './helpers.js';
 
-const makeSettings = (overrides = {}) => ({
-  data: { gameMode: 'fun', powerups: true, difficulty: 'medium', winScore: 11, ...overrides },
-  get(key) { return this.data[key]; },
-});
+const makeSettings = (overrides = {}) => baseSettings({ gameMode: 'fun', powerups: true, difficulty: 'medium', ...overrides });
 
 describe('PowerupManager', () => {
   it('spawns a powerup after the spawn delay elapses', () => {

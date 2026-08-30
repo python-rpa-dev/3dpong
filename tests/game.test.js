@@ -1,23 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
+import { makeSettings as baseSettings } from './helpers.js';
 
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 2,
-    deuce: false,
-    gameMode: 'classic',
-    playerMode: 'ai',
-    powerups: false,
-    multiBall: false,
-    paddleShifts: false,
-    aiTaunts: false,
-    netGraze: false,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
+const makeSettings = (overrides = {}) => baseSettings({ winScore: 2, ...overrides });
 
 function runUntil(game, predicate, maxT = 10) {
   let t = 0;
@@ -80,6 +66,18 @@ describe('Game flow integration', () => {
     expect(hit).toBeDefined();
     expect(hit.who).toBe('player');
     expect(game.rallyCombo).toBe(1);
+  });
+
+  it('game over emits a single gameOver event with the winner', () => {
+    const game = new Game(makeSettings());
+    game.start();
+    scorePlayer(game);
+    scorePlayer(game);
+    runUntil(game, g => g.state === 'GAME_OVER');
+    const events = game.drainEvents();
+    const overs = events.filter(e => e.type === 'gameOver');
+    expect(overs).toHaveLength(1);
+    expect(overs[0].winner).toBe('player');
   });
 
   it('pause and resume round-trips through PAUSED', () => {

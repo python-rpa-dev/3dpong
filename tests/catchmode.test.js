@@ -2,24 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Game } from '../src/game/Game.js';
 import { Ball } from '../src/game/Ball.js';
 import { CONFIG } from '../src/config.js';
-
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 11,
-    deuce: false,
-    gameMode: 'classic',
-    playerMode: 'ai',
-    powerups: false,
-    multiBall: false,
-    paddleShifts: false,
-    aiTaunts: false,
-    netGraze: false,
-    catchMode: false,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
+import { makeSettings } from './helpers.js';
 
 describe('Catch mode', () => {
   it('applyCatchAssist slows the ball and preserves direction', () => {

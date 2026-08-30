@@ -14,6 +14,7 @@ import { Settings } from './settings/Settings.js';
 import { Records } from './settings/Records.js';
 import { GamepadInput } from './input/GamepadInput.js';
 import { effectiveYaw } from './scene/cameraPose.js';
+import { createEventFx } from './eventFx.js';
 
 const buildTag = document.getElementById('build-tag');
 if (buildTag) {
@@ -46,8 +47,12 @@ ui.onViewControls((v) => {
 });
 
 const gamepadInput = new GamepadInput(game);
+const handleGameEvents = createEventFx({
+  game, audio, effects, ui, camera, ballRenderer, paddleRenderer,
+});
 
 let lastTime = performance.now();
+let loopErrors = 0;
 
 function gameLoop(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
@@ -59,135 +64,39 @@ function gameLoop(time) {
     }
     if (settings.get('gamepad')) gamepadInput.update(dt);
     game.update(dt);
+    handleGameEvents(game.drainEvents());
 
-    // Drain game events and trigger effects/sounds
-    const events = game.drainEvents();
-  for (const evt of events) {
-    switch (evt.type) {
-      case 'wallBounce':
-        audio.playWallBounce();
-        ballRenderer.triggerSquash('x');
-        effects.spawnParticles(evt.x, 0.5, evt.z, 0xffffff, 6, 2);
-        effects.triggerShake(CONFIG.effects.hitShake, CONFIG.effects.hitShakeDuration);
-        break;
-      case 'paddleHit': {
-        const speed = game.ball.currentSpeed;
-        audio.playPaddleHit(speed, evt.combo || 0);
-        ballRenderer.triggerSquash('z');
-        const color = evt.who === 'player' ? CONFIG.colors.playerPaddle : CONFIG.colors.opponentPaddle;
-        const combo = evt.combo || 1;
-        const particleCount = CONFIG.effects.hitParticles + Math.min(combo * 2, 20);
-        const shakeMag = CONFIG.effects.hitShake + Math.min(combo * 0.1, 1);
-        effects.spawnParticles(evt.x, 0.5, evt.z, color, particleCount, 3 + Math.min(combo * 0.2, 2));
-        effects.triggerShake(shakeMag, CONFIG.effects.hitShakeDuration);
-        // Paddle flash
-        if (evt.who === 'player') paddleRenderer.flashPlayer();
-        else paddleRenderer.flashAI();
-        // Combo milestones: 5, 10, 15, 20
-        if (combo % 5 === 0 && combo > 0) {
-          effects.spawnComboRing(evt.x, 0.5, evt.z, combo);
-          audio.playComboMilestone(combo);
-        }
-        break;
-      }
-      case 'paddleShift': {
-        audio.playPaddleShift(evt.mode);
-        const paddle = evt.affected === 'player' ? game.playerPaddle : game.aiPaddle;
-        const shiftColor = evt.mode === 'shrink' ? 0xff2d95 : 0x00ff88;
-        effects.spawnParticles(paddle.x, 1, paddle.z, shiftColor, 12, 3);
-        break;
-      }
-      case 'multiBallSpawn':
-        audio.playMultiBall();
-        effects.spawnParticles(evt.x, 1, evt.z, 0x00ff88, 24, 5);
-        effects.triggerShake(2, 0.15);
-        ui.showPowerupToast('multi', evt.target);
-        break;
-      case 'powerup': {
-        const puColor = CONFIG.powerups.colors[evt.puType] || 0xffffff;
-        audio.playPowerup(evt.puType);
-        effects.spawnParticles(game.ball.x, 1, game.ball.z, puColor, 20, 4);
-        effects.triggerShake(1.5, 0.15);
-        ui.showPowerupToast(evt.puType, evt.target);
-        break;
-      }
-      case 'record':
-        ui.showRecord(evt.kind, evt.value);
-        break;
-      case 'achievement':
-        ui.showAchievement(evt.id);
-        audio.playPowerup('double');
-        break;
-      case 'boss':
-        ui.showBoss(evt.label, evt.effect);
-        if (evt.effect === 'intro') audio.playPowerup('shrink');
-        else audio.playNetGrazed();
-        break;
-      case 'draft':
-        ui.showDraft(evt.options, evt.timeout);
-        break;
-      case 'draftResolved':
-        ui.hideDraft();
-        if (evt.choice) ui.showPowerupToast(evt.choice, 'player');
-        break;
-      case 'netGrazed':
-        audio.playNetGrazed();
-        effects.spawnParticles(evt.x, 0.6, evt.z, 0xffffee, 10, 2.5);
-        break;
-      case 'taunt':
-        ui.showTaunt(evt.text);
-        break;
-      case 'score': {
-        const isPlayer = evt.who === 'player';
-        audio.playScore(isPlayer);
-        const color = isPlayer ? CONFIG.colors.playerPaddle : CONFIG.colors.opponentPaddle;
-        effects.spawnParticles(evt.x, 1, evt.z, color, CONFIG.effects.scoreParticles * 2, 5);
-        effects.triggerShake(CONFIG.effects.scoreShake * 1.5, CONFIG.effects.scoreShakeDuration);
-        effects.triggerScreenFlash(isPlayer ? color : 0xff0044, 0.3);
-        camera.punch(0.06);
-        break;
-      }
+    // Rally music follows game state + combo intensity
+    if (settings.get('music') && audio.enabled && game.state === 'PLAYING') {
+      if (!audio.musicPlaying) audio.startMusic();
+      audio.setMusicIntensity(game.rallyCombo);
+    } else if (audio.musicPlaying) {
+      audio.stopMusic();
     }
-  }
 
-  // Check for game over sound
-  if (game.state === 'GAME_OVER' && !game._gameOverSoundPlayed) {
-    game._gameOverSoundPlayed = true;
-    if (game.winner === 'player') audio.playWin();
-    else audio.playLose();
-  }
-  if (game.state !== 'GAME_OVER') {
-    game._gameOverSoundPlayed = false;
-  }
+    // Update renderers
+    ballRenderer.setGhost(game.isBallHidden(game.threatBall()));
+    ballRenderer.update(game.balls, dt, game.rallyCombo);
+    courtRenderer.update(game.rallyCombo, dt);
+    paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
+    powerupRenderer.update(game.powerups.active, dt);
+    aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);
+    effects.update(dt);
 
-  // Rally music follows game state + combo intensity
-  if (settings.get('music') && audio.enabled && game.state === 'PLAYING') {
-    if (!audio.musicPlaying) audio.startMusic();
-    audio.setMusicIntensity(game.rallyCombo);
-  } else if (audio.musicPlaying) {
-    audio.stopMusic();
-  }
+    // Apply screen shake to camera
+    camera.applyShake(effects.shakeOffset);
+    camera.update(dt);
 
-  // Update renderers
-  ballRenderer.setGhost(game.isBallHidden(game.threatBall()));
-  ballRenderer.update(game.balls, dt, game.rallyCombo);
-  courtRenderer.update(game.rallyCombo, dt);
-  paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
-  powerupRenderer.update(game.powerups.active, dt);
-  aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);
-  effects.update(dt);
+    // Render
+    scene.render(camera.camera);
 
-  // Apply screen shake to camera
-  camera.applyShake(effects.shakeOffset);
-  camera.update(dt);
-
-  // Render
-  scene.render(camera.camera);
-
-  // Update UI
-  ui.update();
+    // Update UI
+    ui.update();
   } catch (e) {
-    console.error('Game loop error:', e);
+    // Log the first failure loudly, then stay quiet instead of spamming every frame
+    if (loopErrors === 0) console.error('Game loop error:', e);
+    else if (loopErrors === 1) console.error('(further game-loop errors suppressed)');
+    loopErrors++;
   }
 
   requestAnimationFrame(gameLoop);

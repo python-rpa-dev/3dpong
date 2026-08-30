@@ -1,23 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
+import { makeSettings as baseSettings } from './helpers.js';
 
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 11,
-    deuce: false,
-    gameMode: 'fun',
-    playerMode: 'ai',
-    powerups: true,
-    multiBall: false,
-    paddleShifts: false,
-    aiTaunts: false,
-    netGraze: false,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
+const makeSettings = (overrides = {}) => baseSettings({ gameMode: 'fun', powerups: true, ...overrides });
 
 describe('Ghost + freeze powerups', () => {
   it('freeze locks the opponent of the collector', () => {

@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
+import { makeSettings as baseSettings } from './helpers.js';
 
-const makeSettings = (overrides = {}) => ({
-  data: { gameMode: 'fun', multiBall: true, powerups: false, paddleShifts: false, difficulty: 'medium', winScore: 11, ...overrides },
-  get(key) { return this.data[key]; },
-});
+const makeSettings = (overrides = {}) => baseSettings({ gameMode: 'fun', multiBall: true, difficulty: 'medium', ...overrides });
 
 describe('Hit-stop', () => {
   it('freezes the simulation while the timer runs, then resumes', () => {

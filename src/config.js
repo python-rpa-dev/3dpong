@@ -38,6 +38,12 @@ export const CONFIG = {
     playerPaddle: 0x00e5ff,
     opponentPaddle: 0xff2d95,
     ball: 0xffff00,
+    wallHit: 0xffffff,
+    shiftShrink: 0xff2d95,
+    shiftGrow: 0x00ff88,
+    multiball: 0x00ff88,
+    netGrazed: 0xffffee,
+    lossFlash: 0xff0044,
   },
   ai: {
     easy: { reactionDelay: 0.3, maxSpeed: 9, error: 0.1 },
