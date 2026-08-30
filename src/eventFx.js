@@ -52,7 +52,7 @@ export function createEventFx({ game, audio, effects, ui, camera, ballRenderer, 
       audio.playPowerup(evt.puType);
       effects.spawnParticles(game.ball.x, 1, game.ball.z, puColor, 20, 4);
       effects.triggerShake(1.5, 0.15);
-      ui.showPowerupToast(evt.puType, evt.target);
+      ui.showPowerupToast(evt.puType, evt.target, evt.mult || 1);
     },
 
     record(evt) {

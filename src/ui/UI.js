@@ -302,7 +302,7 @@ export class UI {
     }
   }
 
-  showPowerupToast(puType, target) {
+  showPowerupToast(puType, target, mult = 1) {
     const labels = {
       wide: 'PADDLE BOOST!',
       shrink: 'OPPONENT SHRUNK!',
@@ -320,6 +320,7 @@ export class UI {
         ? (puType === 'shrink' ? 'P2 PADDLE SHRUNK!' : 'P2 DOUBLE POINTS!')
         : (puType === 'shrink' ? 'YOUR PADDLE SHRANK!' : 'AI DOUBLE POINTS!');
     }
+    if (puType === 'double' && mult > 1) text += ` x${mult}`;
     this.powerupToastEl.textContent = text;
     this.powerupToastEl.style.color = colors[puType] || '#ffffff';
     // Restart the CSS animation

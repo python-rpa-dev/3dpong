@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { PowerupManager } from '../src/game/Powerups.js';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
-import { makeSettings as baseSettings } from './helpers.js';
+import { makeSettings as baseSettings, scoreGoal } from './helpers.js';
 
 const makeSettings = (overrides = {}) => baseSettings({ gameMode: 'fun', powerups: true, difficulty: 'medium', ...overrides });
 
@@ -100,24 +100,65 @@ describe('Game powerup effects', () => {
     const game = makeGame();
     game.start();
     game.aiPaddle.x = 9; // keep AI paddle out of the way
-    const scoreOnce = () => {
-      game.state = 'PLAYING';
-      game.ball.active = true;
-      game.ball.x = 0;
-      game.ball.z = CONFIG.court.depth / 2 + 2; // past the goal line
-      game.ball.vz = 10;
-      game.handleCollisions();
-    };
     game.applyPowerup('double', 'player');
-    scoreOnce();
+    scoreGoal(game);
     expect(game.score.playerScore).toBe(2);
 
     // second goal still doubled, third is single
-    scoreOnce();
+    scoreGoal(game);
     expect(game.score.playerScore).toBe(4);
 
-    scoreOnce();
+    scoreGoal(game);
     expect(game.score.playerScore).toBe(5);
+  });
+
+  it('double stacks multiplicatively and caps at doubleMaxMult', () => {
+    const game = makeGame();
+    game.start();
+    game.applyPowerup('double', 'player');
+    expect(game.doublePoints.player).toEqual({ mult: 2, goalsLeft: CONFIG.powerups.doublePointsGoals });
+    game.applyPowerup('double', 'player');
+    expect(game.doublePoints.player.mult).toBe(4);
+    game.applyPowerup('double', 'player');
+    game.applyPowerup('double', 'player');
+    expect(game.doublePoints.player.mult).toBe(CONFIG.powerups.doubleMaxMult);
+  });
+
+  it('stacked double scores the current multiplier until goals run out', () => {
+    const game = makeGame();
+    game.start();
+    game.aiPaddle.x = 9;
+    game.applyPowerup('double', 'player');
+    game.applyPowerup('double', 'player'); // x4, 2 goals left
+    scoreGoal(game);
+    expect(game.score.playerScore).toBe(4);
+    scoreGoal(game);
+    expect(game.score.playerScore).toBe(8);
+    scoreGoal(game);
+    expect(game.score.playerScore).toBe(9);
+    expect(game.doublePoints.player).toEqual({ mult: 1, goalsLeft: 0 });
+  });
+
+  it('stacked double marker is replaced, not duplicated per side', () => {
+    const game = makeGame();
+    game.start();
+    game.applyPowerup('double', 'player');
+    game.applyPowerup('double', 'player');
+    game.applyPowerup('double', 'ai');
+    const markers = game.activeEffects.filter((e) => e.type === 'double');
+    expect(markers.length).toBe(2);
+    expect(markers.find((e) => e.target === 'player').mult).toBe(4);
+  });
+
+  it('each side keeps its own multiplier', () => {
+    const game = makeGame();
+    game.start();
+    game.aiPaddle.x = 9;
+    game.applyPowerup('double', 'ai');
+    game.playerPaddle.x = 9; // ball heads for the player's line
+    scoreGoal(game, 'ai');
+    expect(game.score.opponentScore).toBe(2);
+    expect(game.doublePoints.player.mult).toBe(1);
   });
 
   it('powerups disabled in classic mode', () => {

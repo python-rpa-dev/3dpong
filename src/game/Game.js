@@ -42,7 +42,7 @@ export class Game {
     this.lastHitter = null;
     this.timeScale = 1;
     this.activeEffects = [];
-    this.doublePoints = { player: 0, ai: 0 };
+    this.resetPointBoost();
     this.hitStopTimer = 0;
     this.serveAimX = 0;
     this._tauntedImpressed = false;
@@ -268,7 +268,7 @@ export class Game {
     this.lastHitter = null;
     this.timeScale = 1;
     this.activeEffects = [];
-    this.doublePoints = { player: 0, ai: 0 };
+    this.resetPointBoost();
     this.powerups.reset();
     this.stockedPowerup = null;
     this._pendingDraft = null;
@@ -300,7 +300,7 @@ export class Game {
     this.balls.length = 1;
     this.timeScale = 1;
     this.activeEffects = [];
-    this.doublePoints = { player: 0, ai: 0 };
+    this.resetPointBoost();
     this.powerups.reset();
     this.stockedPowerup = null;
     this._pendingDraft = null;
@@ -467,11 +467,16 @@ export class Game {
   /** A ball left the court: apply points, streaks, taunts and state change. */
   endRally(ball, scorer) {
     const side = scorer === 'opponent' ? 'ai' : scorer;
-    const points = this.doublePoints[side] > 0 ? 2 : 1;
-    if (this.doublePoints[side] > 0) {
-      this.doublePoints[side]--;
-      if (this.doublePoints[side] === 0) {
+    const boost = this.doublePoints[side];
+    const points = boost.goalsLeft > 0 ? boost.mult : 1;
+    if (boost.goalsLeft > 0) {
+      boost.goalsLeft--;
+      if (boost.goalsLeft === 0) {
+        boost.mult = 1;
         this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === side));
+      } else {
+        const marker = this.activeEffects.find(e => e.type === 'double' && e.target === side);
+        if (marker) marker.goalsLeft = boost.goalsLeft;
       }
     }
     this.score.addPoint(side, points);
@@ -499,8 +504,13 @@ export class Game {
     if (type === 'slowmo') {
       this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationSlowmo });
     } else if (type === 'double') {
-      this.doublePoints[target] = Math.max(this.doublePoints[target], cfg.doublePointsGoals);
-      this.activeEffects.push({ type, target, goalsLeft: cfg.doublePointsGoals });
+      // Stacks multiplicatively (x2 -> x4 -> x8); goals refresh, multiplier persists
+      const boost = this.doublePoints[target];
+      boost.mult = Math.min(boost.mult * 2, cfg.doubleMaxMult);
+      boost.goalsLeft = Math.max(boost.goalsLeft, cfg.doublePointsGoals);
+      // One marker per side so the HUD reflects the current stack
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === target));
+      this.activeEffects.push({ type, target, goalsLeft: boost.goalsLeft, mult: boost.mult });
     } else if (type === 'ghost') {
       this.activeEffects = this.activeEffects.filter(e => e.type !== 'ghost');
       this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationGhost });
@@ -522,8 +532,16 @@ export class Game {
       if (type === 'shrink') this.noteOpponentShrink(affected, scale);
     }
 
-    this.events.push({ type: 'powerup', puType: type, target });
+    const evt = { type: 'powerup', puType: type, target };
+    if (type === 'double') evt.mult = this.doublePoints[target].mult;
+    this.events.push(evt);
     this.applyModifiers();
+  }
+
+  /** Per-side point multiplier granted by `double` powerups. */
+  resetPointBoost() {
+    const empty = () => ({ mult: 1, goalsLeft: 0 });
+    this.doublePoints = { player: empty(), ai: empty() };
   }
 
   shiftsEnabled() {
@@ -569,7 +587,7 @@ export class Game {
     if (changed) {
       this.activeEffects = this.activeEffects.filter(e => e.timeLeft === undefined || e.timeLeft > 0);
       for (const e of this.activeEffects) {
-        if (e.type === 'double' && this.doublePoints[e.target] === 0) {
+        if (e.type === 'double' && this.doublePoints[e.target].goalsLeft === 0) {
           // goals exhausted, drop marker
           e.expired = true;
         }

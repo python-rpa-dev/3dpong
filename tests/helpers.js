@@ -1,5 +1,7 @@
 // Shared test doubles and fixtures for game-level tests.
 
+import { CONFIG } from '../src/config.js';
+
 export class FakeStorage {
   constructor() { this.store = {}; }
   getItem(k) { return this.store[k] ?? null; }
@@ -28,4 +30,16 @@ export function toPlaying(game) {
   let t = 0;
   while (game.state !== 'PLAYING' && t < 5) { game.update(1 / 60); t += 1 / 60; }
   game.drainEvents();
+}
+
+/** Force a goal: send the active ball past `side`'s scoring line. */
+export function scoreGoal(game, side = 'player') {
+  game.state = 'PLAYING';
+  const ball = game.ball;
+  ball.active = true;
+  ball.x = 0;
+  const reach = CONFIG.court.depth / 2 + 2;
+  ball.z = side === 'player' ? reach : -reach;
+  ball.vz = side === 'player' ? 10 : -10;
+  game.handleCollisions();
 }
