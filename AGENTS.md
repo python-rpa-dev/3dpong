@@ -48,7 +48,7 @@
 
 - **Spec**: `pong3d-spec.md` (authoritative — all decisions trace back here)
 - **Engine**: Three.js (WebGL)
-- **Build**: Vite (dev) / esbuild (single-file dist)
+- **Build**: Vite (dev + single-file dist via vite-plugin-singlefile)
 - **Language**: JavaScript (ES modules)
 - **No framework** — vanilla JS + Three.js
 
@@ -139,7 +139,7 @@ These can be worked on **simultaneously** by different agents:
 | Task | Files |
 |---|---|
 | Unit tests | `tests/*.test.js` |
-| Build config | `vite.config.js`, `esbuild` script |
+| Build config | `vite.config.js` (+ vite-plugin-singlefile) |
 | Single-file build | `dist/pong3d.html` |
 | Acceptance testing | All criteria from spec section 11 |
 
@@ -158,11 +158,8 @@ npm install
 # Dev server (Vite)
 npx vite
 
-# Build for production (modular)
+# Build for production (single-file dist via vite-plugin-singlefile)
 npx vite build
-
-# Build single-file (esbuild)
-npx esbuild src/main.js --bundle --minify --outfile=dist/bundle.js
 
 # Run tests
 npx vitest run
