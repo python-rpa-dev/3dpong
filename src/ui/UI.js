@@ -42,6 +42,9 @@ export class UI {
     document.getElementById('setting-music').checked = settings.get('music');
     document.getElementById('setting-gamepad').checked = settings.get('gamepad');
     document.getElementById('setting-daily').checked = settings.get('dailyChallenge');
+    this.suddenDeathEl = document.getElementById('setting-suddendeath');
+    this.suddenDeathEl.checked = settings.get('suddenDeath');
+    this.updateSuddenDeathGate();
 
     // View angle controls (in-viewport)
     this.viewYawEl = document.getElementById('view-yaw');
@@ -159,6 +162,7 @@ export class UI {
 
   showSettings() {
     this.showingSettings = true;
+    this.updateSuddenDeathGate();
     this.hideAllScreens();
     this.settingsScreen.classList.remove('hidden');
   }
@@ -188,6 +192,8 @@ export class UI {
     this.settings.set('music', document.getElementById('setting-music').checked);
     this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
     this.settings.set('dailyChallenge', document.getElementById('setting-daily').checked);
+    const suddenDeathUnlocked = !!this.records && this.records.has('double_stack');
+    this.settings.set('suddenDeath', suddenDeathUnlocked && this.suddenDeathEl.checked);
     this.settings.save();
 
     this.showMenu();
@@ -416,6 +422,15 @@ export class UI {
   setRecords(records) {
     this.records = records;
     this.updateMenuRecords();
+    this.updateSuddenDeathGate();
+  }
+
+  /** Sudden death is unlockable, so the option stays disabled until it is earned. */
+  updateSuddenDeathGate() {
+    if (!this.suddenDeathEl) return;
+    const unlocked = !!this.records && this.records.has('double_stack');
+    this.suddenDeathEl.disabled = !unlocked;
+    this.suddenDeathEl.title = unlocked ? '' : 'Locked — stack double points to x8 in one match';
   }
 
   updateMenuRecords() {

@@ -31,6 +31,7 @@ In-game buttons toggle steering axis (`STEER`), swap sides (`SIDES`), and orbit/
 - **Powerups** spawn on the court and are collected by running the ball over them: wide, shrink, slow-mo, double points, ghost, freeze. Every 5-hit rally also offers a *draft* — pick one powerup to stock for your next hit.
 - **Combos** count rally hits and drive scoring tint, particles, music layers and multi-ball.
 - **Double-points loadout** — the best `x2 → x4 → x8` stack you reach in a match is banked in your records and seeds the next single-player match (never in dailies or 2-player).
+- **Sudden death** — unlockable match rule (next point wins), gated behind the *Double Stack* trophy.
 - **Records & trophies** — best rally, streaks, wins/losses, achievements, and a seeded daily challenge, all in `localStorage`.
 
 ## Development

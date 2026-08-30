@@ -132,6 +132,12 @@ export class Game {
     return this.powerupsEnabled() && !!this.records && !this.isVersus() && !this.settings.get('dailyChallenge');
   }
 
+  /** Next point wins; achievement-gated, and off in dailies so seeds stay comparable. */
+  suddenDeathEnabled() {
+    return this.settings.get('suddenDeath') && !!this.records && this.records.has('double_stack')
+      && !this.settings.get('dailyChallenge');
+  }
+
   /** Restore the banked double-points multiplier into a fresh match. */
   seedLoadout() {
     this._peakDoubleMult = 1;
@@ -277,8 +283,9 @@ export class Game {
     this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
     this.powerups.rng = this.rng;
     if (this.aiPaddle.rng) this.aiPaddle.rng = this.rng;
-    this.score.winScore = this.settings.get('winScore');
-    this.score.deuce = this.settings.get('deuce');
+    const suddenDeath = this.suddenDeathEnabled();
+    this.score.winScore = suddenDeath ? 1 : this.settings.get('winScore');
+    this.score.deuce = suddenDeath ? false : this.settings.get('deuce');
     this.score.reset();
     this.balls = [new Ball()];
     this.rallyCombo = 0;
@@ -531,7 +538,10 @@ export class Game {
       const boost = this.doublePoints[target];
       boost.mult = Math.min(boost.mult * 2, cfg.doubleMaxMult);
       boost.goalsLeft = Math.max(boost.goalsLeft, cfg.doublePointsGoals);
-      if (target === 'player') this._peakDoubleMult = Math.max(this._peakDoubleMult, boost.mult);
+      if (target === 'player') {
+        this._peakDoubleMult = Math.max(this._peakDoubleMult, boost.mult);
+        if (boost.mult >= cfg.doubleMaxMult && this.achievementsEnabled()) this.tryUnlock('double_stack');
+      }
       // One marker per side so the HUD reflects the current stack
       this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === target));
       this.activeEffects.push({ type, target, goalsLeft: boost.goalsLeft, mult: boost.mult });

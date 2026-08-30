@@ -5,6 +5,7 @@ const DEFAULTS = {
   winScore: 11,
   deuce: true,
   gameMode: 'fun',
+  suddenDeath: false,
   playerMode: 'ai',
   powerups: true,
   drafts: true,
