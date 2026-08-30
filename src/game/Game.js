@@ -55,6 +55,9 @@ export class Game {
     this.boss = null;
     this._bossTimer = 0;
     this.rng = Math.random;
+    this.stockedPowerup = null;
+    this._pendingDraft = null;
+    this._draftTimer = 0;
   }
 
   isFunMode() {
@@ -122,6 +125,53 @@ export class Game {
 
   powerupsEnabled() {
     return this.isFunMode() && this.settings.get('powerups');
+  }
+
+  draftsEnabled() {
+    return this.powerupsEnabled() && this.settings.get('drafts');
+  }
+
+  /** Offer a pick-of-two powerup draft every Nth rally hit; play continues. */
+  maybeOfferDraft() {
+    if (!this.draftsEnabled() || this._pendingDraft) return;
+    if (this.rallyCombo % CONFIG.drafts.every !== 0) return;
+    const types = [...CONFIG.powerups.types];
+    const a = Math.floor(this.rng() * types.length);
+    let b = Math.floor(this.rng() * (types.length - 1));
+    if (b >= a) b++;
+    this._pendingDraft = [types[a], types[b]];
+    this._draftTimer = CONFIG.drafts.timeout;
+    this.events.push({ type: 'draft', options: this._pendingDraft, timeout: CONFIG.drafts.timeout });
+  }
+
+  draftPending() {
+    return !!this._pendingDraft;
+  }
+
+  draftRemaining() {
+    return Math.max(0, this._draftTimer);
+  }
+
+  /** Resolve the draft with a powerup type or null to skip. */
+  chooseDraft(type) {
+    if (!this._pendingDraft) return;
+    const choice = type && this._pendingDraft.includes(type) ? type : null;
+    this.finishDraft(choice, false);
+  }
+
+  /** Timeout fallback: random pick among the two options plus a skip. */
+  resolveDraftAuto() {
+    if (!this._pendingDraft) return;
+    const idx = Math.floor(this.rng() * (this._pendingDraft.length + 1));
+    const choice = idx < this._pendingDraft.length ? this._pendingDraft[idx] : null;
+    this.finishDraft(choice, true);
+  }
+
+  finishDraft(choice, auto) {
+    if (choice) this.stockedPowerup = choice;
+    this._pendingDraft = null;
+    this._draftTimer = 0;
+    this.events.push({ type: 'draftResolved', choice, auto });
   }
 
   tauntsEnabled() {
@@ -221,6 +271,9 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.powerups.reset();
+    this.stockedPowerup = null;
+    this._pendingDraft = null;
+    this._draftTimer = 0;
     this.serveDirection = this.rng() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
@@ -250,6 +303,9 @@ export class Game {
     this.activeEffects = [];
     this.doublePoints = { player: 0, ai: 0 };
     this.powerups.reset();
+    this.stockedPowerup = null;
+    this._pendingDraft = null;
+    this._draftTimer = 0;
     this.applyModifiers();
   }
 
@@ -258,6 +314,12 @@ export class Game {
     if (this.hitStopTimer > 0 && (this.state === STATES.PLAYING || this.state === STATES.SCORED)) {
       this.hitStopTimer -= dt;
       return;
+    }
+
+    // Draft countdown runs during live play only; timeout auto-picks (incl. skip)
+    if (this._pendingDraft && (this.state === STATES.PLAYING || this.state === STATES.SERVE || this.state === STATES.SCORED)) {
+      this._draftTimer -= dt;
+      if (this._draftTimer <= 0) this.resolveDraftAuto();
     }
 
     switch (this.state) {
@@ -353,6 +415,13 @@ export class Game {
           this.bossShrinkPlayer();
         }
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
+        if (this.stockedPowerup) {
+          const stocked = this.stockedPowerup;
+          this.stockedPowerup = null;
+          this.applyPowerup(stocked, 'player');
+        } else {
+          this.maybeOfferDraft();
+        }
       }
 
       // AI paddle bounce
@@ -367,6 +436,7 @@ export class Game {
         this.recordRally();
         this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
         this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
+        this.maybeOfferDraft();
       }
 
       // Multi-ball trigger: spawn a second ball at the combo threshold (once per rally)

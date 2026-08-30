@@ -49,6 +49,16 @@
       <button id="btn-settings" class="neon-btn">SETTINGS</button>
     </div>
 
+    <div id="draft-screen" class="screen hidden">
+      <h2>PICK A POWER-UP</h2>
+      <p class="subtitle">Applies on your next hit — auto-pick when the timer runs out</p>
+      <div class="draft-timer"><div id="draft-timer-fill"></div></div>
+      <div class="draft-cards">
+        <button id="draft-0" class="neon-btn draft-card"></button>
+        <button id="draft-1" class="neon-btn draft-card"></button>
+      </div>
+      <button id="draft-skip" class="neon-btn draft-skip">SKIP</button>
+    </div>
     <div id="pause-screen" class="screen hidden">
       <h2>PAUSED</h2>
       <button id="btn-resume" class="neon-btn">RESUME</button>
@@ -142,6 +152,12 @@
           <label>
             <input type="checkbox" id="setting-netgraze" checked>
             Net graze (rare lucky deflection at the net)
+          </label>
+        </div>
+        <div class="setting-row checkbox-row">
+          <label>
+            <input type="checkbox" id="setting-drafts" checked>
+            Power-up drafts (pick 1 of 2 every 5-rally)
           </label>
         </div>
       </div>

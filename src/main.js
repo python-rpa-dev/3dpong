@@ -118,6 +118,13 @@ function gameLoop(time) {
         if (evt.effect === 'intro') audio.playPowerup('shrink');
         else audio.playNetGrazed();
         break;
+      case 'draft':
+        ui.showDraft(evt.options, evt.timeout);
+        break;
+      case 'draftResolved':
+        ui.hideDraft();
+        if (evt.choice) ui.showPowerupToast(evt.choice, 'player');
+        break;
       case 'netGrazed':
         audio.playNetGrazed();
         effects.spawnParticles(evt.x, 0.6, evt.z, 0xffffee, 10, 2.5);

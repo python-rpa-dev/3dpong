@@ -34,7 +34,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Medium
 
-4. **Touch controls** — drag-to-move paddle so the game works on phones/tablets.
+4. ✅ **Touch controls** — drag-to-move paddle so the game works on phones/tablets.
 5. **Boss Rush ladder** — beat all three bosses in sequence with escalating difficulty instead of one random boss.
 6. **Unlockable court skins** — palette variants tied to achievements.
 ✅ 7. **View angle sliders (viewport)** — horizontal/vertical sliders that orbit/pan the camera around the court (yaw + tilt), default = current pose, soft-animated transitions; keyboard aiming must stay correct at any angle.
@@ -43,7 +43,7 @@ Implement one at a time on `dev`, commit each separately.
 ### Bigger swings
 
 9. **Replay system** — seed + input log makes any match reproducible; shareable codes.
-10. **PWA offline install** — manifest + service worker so the single-file build is also installable.
+10. ✅ **PWA offline install** — manifest + service worker so the single-file build is also installable. (Manifest shipped; SW intentionally skipped, see caveats.)
 
 ---
 
@@ -51,7 +51,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Gameplay depth
 
-1. **Powerup drafts** — after a 5-rally, pick 1 of 2 random powerups to keep for your next hit (deckbuilding layer).
+1. ✅ **Powerup drafts** — after a 5-rally, pick 1 of 2 random powerups to keep for your next hit (deckbuilding layer). Non-blocking: play continues behind the overlay; auto-picks randomly (including skip) after 3 s.
 2. **Hazard zones** — random court tiles that speed up / slow / curve the ball for one bounce; telegraphed with floor glow.
 3. **Curve/spin shot** — paddle-edge contact bends the ball path; aim skill without vertical physics (velocity stays planar).
 4. **Multi-stage AI difficulty** — AI ramps reaction/error within a game when losing, eases when winning (rubber-band tension).
@@ -68,7 +68,7 @@ Implement one at a time on `dev`, commit each separately.
 
 10. **Ball shadow/ground indicator** — readability win at extreme camera tilts.
 11. **Slow-mo on match point** — brief time dilation + audio duck on game/match-point serves.
-12. **Hit-stop freeze** — ~30 ms freeze frame on big combo hits.
+12. ✅ **Hit-stop freeze** — ~30 ms freeze frame on big combo hits.
 13. **Ambient stadium reactions** — procedural crowd murmur swelling with rally length (Web Audio, no assets).
 
 ### Social/sharing

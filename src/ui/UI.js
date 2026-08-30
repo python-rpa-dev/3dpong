@@ -1,6 +1,7 @@
 import { CONFIG } from '../config.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
 import { remapSteerKey, applySwap } from '../input/steerKeys.js';
+import { POWERUP_INFO } from '../game/Powerups.js';
 
 export class UI {
   constructor(game, settings) {
@@ -30,6 +31,7 @@ export class UI {
     document.getElementById('setting-gamemode').value = settings.get('gameMode');
     document.getElementById('setting-playermode').value = settings.get('playerMode');
     document.getElementById('setting-powerups').checked = settings.get('powerups');
+    document.getElementById('setting-drafts').checked = settings.get('drafts');
     document.getElementById('setting-multiball').checked = settings.get('multiBall');
     document.getElementById('setting-paddleshifts').checked = settings.get('paddleShifts');
     document.getElementById('setting-aitaunts').checked = settings.get('aiTaunts');
@@ -90,6 +92,21 @@ export class UI {
     document.getElementById('btn-menu').addEventListener('click', () => this.quitToMenu());
     document.getElementById('btn-save-settings').addEventListener('click', () => this.saveSettings());
     document.getElementById('btn-back').addEventListener('click', () => this.showMenu());
+
+    this.draftScreen = document.getElementById('draft-screen');
+    this.draftCards = [document.getElementById('draft-0'), document.getElementById('draft-1')];
+    this.draftTimerFill = document.getElementById('draft-timer-fill');
+    this._draftOptions = null;
+    // Hiding happens via the 'draftResolved' event so auto-picks close it too.
+    this.draftCards.forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        const opt = this._draftOptions && this._draftOptions[i];
+        this.game.chooseDraft(opt || null);
+      });
+    });
+    document.getElementById('draft-skip').addEventListener('click', () => {
+      this.game.chooseDraft(null);
+    });
     document.getElementById('setting-gamemode').addEventListener('change', () => this.updateFunSettingsVisibility());
 
     // Keyboard
@@ -118,6 +135,9 @@ export class UI {
   resumeGame() {
     this.game.resume();
     this.hideAllScreens();
+    if (this.game.draftPending() && this._draftOptions) {
+      this.showDraft(this._draftOptions, this.game.draftRemaining());
+    }
     this.scoreDisplay.classList.remove('hidden');
   }
 
@@ -157,6 +177,7 @@ export class UI {
     this.settings.set('gameMode', gameMode);
     this.settings.set('playerMode', document.getElementById('setting-playermode').value);
     this.settings.set('powerups', powerups);
+    this.settings.set('drafts', document.getElementById('setting-drafts').checked);
     this.settings.set('multiBall', multiBall);
     this.settings.set('paddleShifts', paddleShifts);
     this.settings.set('aiTaunts', document.getElementById('setting-aitaunts').checked);
@@ -186,7 +207,30 @@ export class UI {
     this.pauseScreen.classList.add('hidden');
     this.gameoverScreen.classList.add('hidden');
     this.settingsScreen.classList.add('hidden');
+    if (this.draftScreen) this.draftScreen.classList.add('hidden');
     this.comboDisplay.classList.add('hidden');
+  }
+
+  showDraft(options, seconds = CONFIG.drafts.timeout) {
+    this._draftOptions = options;
+    options.forEach((type, i) => {
+      const info = POWERUP_INFO[type] || { label: type.toUpperCase(), desc: '' };
+      const color = '#' + (CONFIG.powerups.colors[type] || 0xffffff).toString(16).padStart(6, '0');
+      this.draftCards[i].innerHTML = `${info.label}<small>${info.desc}</small>`;
+      this.draftCards[i].style.color = color;
+      this.draftCards[i].style.borderColor = color;
+    });
+    if (this.draftTimerFill) {
+      this.draftTimerFill.style.animation = 'none';
+      void this.draftTimerFill.offsetWidth; // restart the drain animation
+      this.draftTimerFill.style.animation = `draft-drain ${Math.max(0.05, seconds)}s linear forwards`;
+    }
+    this.draftScreen.classList.remove('hidden');
+  }
+
+  hideDraft() {
+    this._draftOptions = null;
+    if (this.draftScreen) this.draftScreen.classList.add('hidden');
   }
 
   update() {
@@ -314,7 +358,10 @@ export class UI {
         this.resumeGame();
       }
     } else if (key === 'Escape') {
-      if (this.game.state === 'PLAYING') {
+      if (this.game.draftPending()) {
+        this.game.chooseDraft(null);
+        this.hideDraft();
+      } else if (this.game.state === 'PLAYING') {
         this.game.pause();
       } else if (this.game.state === 'PAUSED') {
         this.quitToMenu();
