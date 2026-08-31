@@ -23,6 +23,7 @@ const DEFAULTS = {
   viewZoom: 0,
   sideSwap: false,
   steerAxis: 'horizontal',
+  mouseSensitivity: 1,
 };
 
 export class Settings {

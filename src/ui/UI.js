@@ -4,6 +4,8 @@ import { ACHIEVEMENTS } from '../settings/Records.js';
 import { remapSteerKey, applySwap } from '../input/steerKeys.js';
 import { POWERUP_INFO } from '../game/Powerups.js';
 
+export const MOUSE_SENS_LEVELS = [0.25, 0.5, 0.75, 1, 1.5];
+
 export class UI {
   constructor(game, settings) {
     this.game = game;
@@ -59,6 +61,15 @@ export class UI {
       this.settings.set('steerAxis', next);
       this.settings.save();
       this.updateSteerButton();
+    });
+    this.mouseSensBtn = document.getElementById('btn-mouse-sens');
+    this.updateMouseSensButton();
+    this.mouseSensBtn.addEventListener('click', () => {
+      const cur = this.settings.get('mouseSensitivity') ?? 1;
+      const idx = (MOUSE_SENS_LEVELS.findIndex((l) => Math.abs(l - cur) < 1e-6) + 1) % MOUSE_SENS_LEVELS.length;
+      this.settings.set('mouseSensitivity', MOUSE_SENS_LEVELS[idx]);
+      this.settings.save();
+      this.updateMouseSensButton();
     });
     this.viewYawEl.value = String(settings.get('viewYaw'));
     this.viewTiltEl.value = String(Math.round(settings.get('viewTilt') * 100));
@@ -117,6 +128,7 @@ export class UI {
 
     // Keyboard
     this._heldKeys = new Map();
+    this.resetMouseAnchor();
     window.addEventListener('keydown', (e) => this.onKeyDown(e));
     window.addEventListener('keyup', (e) => this.onKeyUp(e));
     // Losing focus swallows keyup events, which would strand a held direction.
@@ -136,6 +148,7 @@ export class UI {
 
   startGame() {
     this.releaseAllSteerKeys();
+    this.resetMouseAnchor();
     this.showingSettings = false;
     this.game.start();
     this.hideAllScreens();
@@ -499,6 +512,12 @@ export class UI {
     this.steerAxisBtn.innerHTML = vertical ? '&#8645; STEER &#8597;' : '&#8596; STEER';
   }
 
+  updateMouseSensButton() {
+    const sens = this.settings.get('mouseSensitivity') ?? 1;
+    this.mouseSensBtn.innerHTML = `&#128433; ${Math.round(sens * 100)}%`;
+    this.mouseSensBtn.setAttribute('aria-label', `Mouse sensitivity ${Math.round(sens * 100)} percent`);
+  }
+
   updateSwapButton() {
     this.swapSidesBtn.setAttribute('aria-pressed', String(Boolean(this.settings.get('sideSwap'))));
   }
@@ -549,23 +568,55 @@ export class UI {
     }, 1600);
   }
 
+  /** Mouse steering integrates cursor deltas so the sensitivity level actually scales travel. */
+  resetMouseAnchor() {
+    this._mouseTarget = null;
+    this._lastMouseWx = null;
+  }
+
   onPointerMove(e) {
-    if (e.pointerType !== 'mouse' && e.pointerId !== this._touchPointerId) return;
-    if (this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED') {
-      if (!this._screenToWorld) return;
-      let worldX;
+    const steering = this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED';
+    if (e.pointerType === 'mouse') {
+      if (!steering || !this._screenToWorld) { this.resetMouseAnchor(); return; }
+      const half = CONFIG.court.width / 2;
+      let wx;
       if (this.settings.get('steerAxis') === 'vertical') {
-        const half = CONFIG.court.width / 2;
-        worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+        wx = ((e.clientY / window.innerHeight) * 2 - 1) * half;
         // A side-swapped view mirrors the screen, so mirror the mapping too (like keys/gamepad)
-        if (this.settings.get('sideSwap')) worldX = -worldX;
+        if (this.settings.get('sideSwap')) wx = -wx;
       } else {
-        worldX = this._screenToWorld(e.clientX, e.clientY);
+        wx = this._screenToWorld(e.clientX, e.clientY);
       }
-      this.game.playerPaddle.setWorldTarget(worldX);
+      if (this._mouseTarget === null) {
+        // Re-arm at the paddle's current spot so entering play never teleports it.
+        this._mouseTarget = this.game.playerPaddle.x;
+        this._lastMouseWx = wx;
+        this.game.playerPaddle.setWorldTarget(this._mouseTarget);
+        if (this.game.state === 'SERVE') this.game.setServeAimWorld(this._mouseTarget);
+        return;
+      }
+      const sens = this.settings.get('mouseSensitivity') ?? 1;
+      this._mouseTarget = Math.max(-half, Math.min(half, this._mouseTarget + (wx - this._lastMouseWx) * sens));
+      this._lastMouseWx = wx;
+      this.game.playerPaddle.setWorldTarget(this._mouseTarget);
       if (this.game.state === 'SERVE') {
-        this.game.setServeAimWorld(worldX);
+        this.game.setServeAimWorld(this._mouseTarget);
       }
+      return;
+    }
+    // Touch/pen: absolute drag while the finger is down — sensitivity would feel wrong there.
+    if (e.pointerId !== this._touchPointerId || !steering || !this._screenToWorld) return;
+    let worldX;
+    if (this.settings.get('steerAxis') === 'vertical') {
+      const half = CONFIG.court.width / 2;
+      worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+      if (this.settings.get('sideSwap')) worldX = -worldX;
+    } else {
+      worldX = this._screenToWorld(e.clientX, e.clientY);
+    }
+    this.game.playerPaddle.setWorldTarget(worldX);
+    if (this.game.state === 'SERVE') {
+      this.game.setServeAimWorld(worldX);
     }
   }
 }
