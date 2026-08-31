@@ -585,7 +585,9 @@ export class UI {
         // A side-swapped view mirrors the screen, so mirror the mapping too (like keys/gamepad)
         if (this.settings.get('sideSwap')) wx = -wx;
       } else {
-        wx = this._screenToWorld(e.clientX, e.clientY);
+        // Fixed scanline: the unprojected x depends on screen y too, which would make
+        // vertical cursor motion drift the paddle sideways. Only clientX should steer here.
+        wx = this._screenToWorld(e.clientX, window.innerHeight / 2);
       }
       if (this._mouseTarget === null) {
         // Re-arm at the paddle's current spot so entering play never teleports it.
@@ -612,7 +614,8 @@ export class UI {
       worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
       if (this.settings.get('sideSwap')) worldX = -worldX;
     } else {
-      worldX = this._screenToWorld(e.clientX, e.clientY);
+      // Same fixed-scanline rule as the mouse path above.
+      worldX = this._screenToWorld(e.clientX, window.innerHeight / 2);
     }
     this.game.playerPaddle.setWorldTarget(worldX);
     if (this.game.state === 'SERVE') {

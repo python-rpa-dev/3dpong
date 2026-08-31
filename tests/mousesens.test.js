@@ -71,6 +71,17 @@ describe('mouse sensitivity', () => {
     expect(Math.abs(game.playerPaddle.targetX)).toBeLessThanOrEqual(10 + 1e-9);
   });
 
+  it('vertical cursor motion does not steer in horizontal mode', () => {
+    const { game, ui } = makeGame();
+    // A camera-like mapping where worldX also shifts with screen y (the old coupling bug).
+    ui.setScreenToWorld((x, y) => -(x - 640) * 0.02 + (y - 360) * 0.05);
+    ui.onPointerMove({ pointerType: 'mouse', clientX: 640, clientY: 100 }); // anchor
+    ui.onPointerMove({ pointerType: 'mouse', clientX: 640, clientY: 620 }); // straight down
+    expect(game.playerPaddle.targetX).toBeCloseTo(0);
+    ui.onPointerMove({ pointerType: 'mouse', clientX: 740, clientY: 630 }); // diagonal: only x counts
+    expect(game.playerPaddle.targetX).toBeCloseTo(-2);
+  });
+
   it('leaving play re-arms the anchor so resume does not teleport', () => {
     const { game, ui } = makeGame();
     move(ui, 640);
