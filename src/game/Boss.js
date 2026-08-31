@@ -6,8 +6,8 @@ export const BOSSES = [
   { id: 'metronome', label: 'THE METRONOME', intro: 'BALL ACCELERATES FAST OFF YOUR PADDLE' },
 ];
 
-export function pickBoss() {
-  return BOSSES[Math.floor(Math.random() * BOSSES.length)];
+export function pickBoss(rng = Math.random) {
+  return BOSSES[Math.floor(rng() * BOSSES.length)];
 }
 
 export const BOSS_TUNING = {

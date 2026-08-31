@@ -86,7 +86,7 @@ export class Effects {
     if (!ring) return;
     ring.mesh.position.set(x, y, z);
     ring.mesh.rotation.set(0, 0, 0);
-    const color = CONFIG.fun.comboColors[Math.min(combo - 1, CONFIG.fun.comboColors.length - 1)] || 0xffffff;
+    const color = CONFIG.comboColors[Math.min(combo - 1, CONFIG.comboColors.length - 1)] || 0xffffff;
     ring.mesh.material.color.setHex(color);
     ring.mesh.material.opacity = 1;
     ring.mesh.scale.set(1, 1, 1);
@@ -143,12 +143,6 @@ export class Effects {
       p.mesh.material.opacity = 1;
       p.mesh.visible = true;
     }
-  }
-
-  triggerShake(magnitude, duration) {
-    this.shakeMagnitude = magnitude;
-    this.shakeDuration = duration;
-    this.shakeTime = duration;
   }
 
   findParticle() {

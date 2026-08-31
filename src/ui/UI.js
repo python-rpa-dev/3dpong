@@ -355,27 +355,30 @@ export class UI {
     this._tauntTimer = setTimeout(() => el.classList.add('hidden'), 2200);
   }
 
+  /** Which paddle a steering key controls (in versus the arrows drive P2, A/D drive P1). */
+  steerPaddle(key) {
+    const versus = this.settings.get('playerMode') === 'versus';
+    if (versus && (key === 'a' || key === 'A' || key === 'd' || key === 'D')) {
+      return this.game.playerPaddle;
+    }
+    return versus ? this.game.aiPaddle : this.game.playerPaddle;
+  }
+
+  handleSteerKey(key, pressed) {
+    const swapped = this.settings.get('sideSwap');
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+      this.steerPaddle(key).setKey(applySwap('left', swapped), pressed);
+    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+      this.steerPaddle(key).setKey(applySwap('right', swapped), pressed);
+    }
+  }
+
   onKeyDown(e) {
     const vertical = this.settings.get('steerAxis') === 'vertical';
-    const swapped = this.settings.get('sideSwap');
     const key = remapSteerKey(e.key, vertical);
-    const versus = this.settings.get('playerMode') === 'versus';
-    const leftPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
-    const rightPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
+    this.handleSteerKey(key, true);
 
-    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey(applySwap('left', swapped), true);
-      } else {
-        leftPaddle.setKey(applySwap('left', swapped), true);
-      }
-    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey(applySwap('right', swapped), true);
-      } else {
-        rightPaddle.setKey(applySwap('right', swapped), true);
-      }
-    } else if (key === ' ' || key === 'p' || key === 'P') {
+    if (key === ' ' || key === 'p' || key === 'P') {
       e.preventDefault();
       if (this.game.state === 'PLAYING') {
         this.game.pause();
@@ -402,22 +405,7 @@ export class UI {
 
   onKeyUp(e) {
     const vertical = this.settings.get('steerAxis') === 'vertical';
-    const swapped = this.settings.get('sideSwap');
-    const key = remapSteerKey(e.key, vertical);
-    const versus = this.settings.get('playerMode') === 'versus';
-    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey(applySwap('left', swapped), false);
-      } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('left', swapped), false);
-      }
-    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey(applySwap('right', swapped), false);
-      } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('right', swapped), false);
-      }
-    }
+    this.handleSteerKey(remapSteerKey(e.key, vertical), false);
   }
 
   setScreenToWorld(fn) {
@@ -546,6 +534,8 @@ export class UI {
       if (this.settings.get('steerAxis') === 'vertical') {
         const half = CONFIG.court.width / 2;
         worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+        // A side-swapped view mirrors the screen, so mirror the mapping too (like keys/gamepad)
+        if (this.settings.get('sideSwap')) worldX = -worldX;
       } else {
         worldX = this._screenToWorld(e.clientX, e.clientY);
       }

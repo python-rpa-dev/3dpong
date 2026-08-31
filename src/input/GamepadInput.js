@@ -25,9 +25,25 @@ export class GamepadInput {
     return list;
   }
 
+  /** Re-anchor cached targets when the game swaps paddle instances (mode change, new match). */
+  syncTargets(paddles) {
+    if (!this._refs || this._refs.length !== paddles.length) {
+      this.targets = paddles.map((p) => p.x);
+      this._refs = paddles.slice();
+      return;
+    }
+    for (let i = 0; i < paddles.length; i++) {
+      if (this._refs[i] !== paddles[i]) {
+        this._refs[i] = paddles[i];
+        this.targets[i] = paddles[i].x;
+      }
+    }
+  }
+
   update(dt) {
     const pads = this.getGamepads() || [];
     const paddles = this.activePaddles();
+    this.syncTargets(paddles);
     const vertical = this.game.settings?.get('steerAxis') === 'vertical';
     for (let i = 0; i < paddles.length; i++) {
       const pad = pads[i];

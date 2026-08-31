@@ -219,7 +219,7 @@ export class Game {
   }
 
   recordRally() {
-    if (this.records && this.records.noteRally(this.rallyCombo)) {
+    if (this.achievementsEnabled() && this.records.noteRally(this.rallyCombo)) {
       this.events.push({ type: 'record', kind: 'rally', value: this.rallyCombo });
     }
     if (this.achievementsEnabled() && this.rallyCombo >= 20) {
@@ -276,6 +276,8 @@ export class Game {
   start() {
     if (this.state === STATES.MENU || this.state === STATES.GAME_OVER) this.ladderStage = 0;
     this.ladderCleared = false;
+    // Seed before anything gameplay-affecting draws, so dailies stay reproducible
+    this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
     if (this.isLadderMode()) this.encounter = stageAt(this.ladderStage);
     const versus = this.isVersus();
     if (versus) {
@@ -284,7 +286,7 @@ export class Game {
         this.aiPaddle = new PlayerPaddle(CONFIG.paddle.opponentZ);
       }
     } else {
-      this.personality = pickPersonality();
+      this.personality = pickPersonality(this.rng);
       if (this.aiPaddle instanceof AIPaddle) {
         this.aiPaddle.personality = this.personality;
       } else {
@@ -302,9 +304,9 @@ export class Game {
     }
     this.boss = this.encounter
       ? bossFor(this.encounter)
-      : (this.settings.get('gameMode') === 'boss' ? pickBoss() : null);
+      : (this.settings.get('gameMode') === 'boss' ? pickBoss(this.rng) : null);
     this._bossTimer = 0;
-    this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
+    this.winner = null;
     this.powerups.rng = this.rng;
     if (this.aiPaddle.rng) this.aiPaddle.rng = this.rng;
     const suddenDeath = this.suddenDeathEnabled();
@@ -351,6 +353,9 @@ export class Game {
 
   quitToMenu() {
     this.state = STATES.MENU;
+    // A pinned ladder/story encounter must not leak into the next match's mode
+    this.encounter = null;
+    this.winner = null;
     for (const ball of this.balls) ball.active = false;
     this.balls.length = 1;
     this.timeScale = 1;
@@ -421,17 +426,19 @@ export class Game {
             }
             this.state = STATES.GAME_OVER;
             this.winner = winner;
-            if (this.records) this.records.noteResult(winner === 'player');
+            if (this.achievementsEnabled()) {
+              this.records.noteResult(winner === 'player');
+              if (this.settings.get('dailyChallenge')) {
+                this.records.noteDaily(dailySeed(), {
+                  won: winner === 'player',
+                  margin: this.score.playerScore - this.score.opponentScore,
+                  rally: this.maxRallyCombo,
+                });
+              }
+            }
             if (this.loadoutEnabled()) {
               const banked = Math.max(this.records.loadoutMult('double'), this._peakDoubleMult);
               this.records.setLoadoutMult('double', banked);
-            }
-            if (this.records && this.settings.get('dailyChallenge')) {
-              this.records.noteDaily(dailySeed(), {
-                won: winner === 'player',
-                margin: this.score.playerScore - this.score.opponentScore,
-                rally: this.maxRallyCombo,
-              });
             }
             if (winner === 'player') {
               if (this.isLadderMode()) this.ladderCleared = true;
@@ -559,7 +566,7 @@ export class Game {
     this._tauntedImpressed = false;
     this.pointStreak = side === this._lastScorer ? this.pointStreak + 1 : 1;
     this._lastScorer = side;
-    if (side === 'player' && this.records && this.records.noteStreak(this.pointStreak)) {
+    if (side === 'player' && this.achievementsEnabled() && this.records.noteStreak(this.pointStreak)) {
       this.events.push({ type: 'record', kind: 'streak', value: this.pointStreak });
     }
     this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });

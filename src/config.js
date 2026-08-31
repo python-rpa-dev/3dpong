@@ -118,6 +118,5 @@ export const CONFIG = {
     netGrazeNudge: 0.15,
     catchSpeedFactor: 0.82,
     extraBallSpeedFactor: 0.85,
-    comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
   },
 };
