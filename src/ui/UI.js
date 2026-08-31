@@ -114,8 +114,11 @@ export class UI {
     document.getElementById('setting-gamemode').addEventListener('change', () => this.updateFunSettingsVisibility());
 
     // Keyboard
+    this._heldKeys = new Map();
     window.addEventListener('keydown', (e) => this.onKeyDown(e));
     window.addEventListener('keyup', (e) => this.onKeyUp(e));
+    // Losing focus swallows keyup events, which would strand a held direction.
+    window.addEventListener('blur', () => this.releaseAllSteerKeys());
 
     // Pointer (mouse always steers; touch/pen steers while the finger is down)
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
@@ -130,6 +133,7 @@ export class UI {
   }
 
   startGame() {
+    this.releaseAllSteerKeys();
     this.showingSettings = false;
     this.game.start();
     this.hideAllScreens();
@@ -364,19 +368,34 @@ export class UI {
     return versus ? this.game.aiPaddle : this.game.playerPaddle;
   }
 
-  handleSteerKey(key, pressed) {
+  /** Press a steering key; keyed by raw e.key so axis toggles can't strand keys. */
+  pressSteerKey(rawKey, key) {
     const swapped = this.settings.get('sideSwap');
-    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      this.steerPaddle(key).setKey(applySwap('left', swapped), pressed);
-    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      this.steerPaddle(key).setKey(applySwap('right', swapped), pressed);
-    }
+    let dir = null;
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = applySwap('left', swapped);
+    else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = applySwap('right', swapped);
+    if (!dir) return;
+    const paddle = this.steerPaddle(key);
+    paddle.setKey(dir, true);
+    this._heldKeys.set(rawKey, { paddle, dir });
+  }
+
+  releaseSteerKey(rawKey) {
+    const held = this._heldKeys.get(rawKey);
+    if (!held) return;
+    held.paddle.setKey(held.dir, false);
+    this._heldKeys.delete(rawKey);
+  }
+
+  releaseAllSteerKeys() {
+    for (const { paddle, dir } of this._heldKeys.values()) paddle.setKey(dir, false);
+    this._heldKeys.clear();
   }
 
   onKeyDown(e) {
     const vertical = this.settings.get('steerAxis') === 'vertical';
     const key = remapSteerKey(e.key, vertical);
-    this.handleSteerKey(key, true);
+    this.pressSteerKey(e.key, key);
 
     if (key === ' ' || key === 'p' || key === 'P') {
       e.preventDefault();
@@ -404,8 +423,7 @@ export class UI {
   }
 
   onKeyUp(e) {
-    const vertical = this.settings.get('steerAxis') === 'vertical';
-    this.handleSteerKey(remapSteerKey(e.key, vertical), false);
+    this.releaseSteerKey(e.key);
   }
 
   setScreenToWorld(fn) {
