@@ -1,7 +1,8 @@
 import { CONFIG } from '../config.js';
 import { dailySeed } from '../game/rng.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
-import { remapSteerKey, applySwap } from '../input/steerKeys.js';
+import { remapSteerKey } from '../input/steerKeys.js';
+import { mirrorDir, flipIf } from '../input/steerTransform.js';
 import { POWERUP_INFO } from '../game/Powerups.js';
 
 export const MOUSE_SENS_LEVELS = [0.25, 0.5, 0.75, 1, 1.5];
@@ -390,8 +391,8 @@ export class UI {
   pressSteerKey(rawKey, key) {
     const swapped = this.settings.get('sideSwap');
     let dir = null;
-    if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = applySwap('left', swapped);
-    else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = applySwap('right', swapped);
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = mirrorDir('left', swapped);
+    else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = mirrorDir('right', swapped);
     if (!dir) return;
     const paddle = this.steerPaddle(key);
     paddle.setKey(dir, true);
@@ -583,7 +584,7 @@ export class UI {
       if (this.settings.get('steerAxis') === 'vertical') {
         wx = ((e.clientY / window.innerHeight) * 2 - 1) * half;
         // A side-swapped view mirrors the screen, so mirror the mapping too (like keys/gamepad)
-        if (this.settings.get('sideSwap')) wx = -wx;
+        wx = flipIf(wx, this.settings.get('sideSwap'));
       } else {
         // Fixed scanline: the unprojected x depends on screen y too, which would make
         // vertical cursor motion drift the paddle sideways. Only clientX should steer here.
@@ -612,7 +613,7 @@ export class UI {
     if (this.settings.get('steerAxis') === 'vertical') {
       const half = CONFIG.court.width / 2;
       worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
-      if (this.settings.get('sideSwap')) worldX = -worldX;
+      worldX = flipIf(worldX, this.settings.get('sideSwap'));
     } else {
       // Same fixed-scanline rule as the mouse path above.
       worldX = this._screenToWorld(e.clientX, window.innerHeight / 2);
