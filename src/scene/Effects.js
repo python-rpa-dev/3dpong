@@ -9,6 +9,7 @@ export class Effects {
     this.shakeTime = 0;
     this.shakeDuration = 0;
     this.shakeMagnitude = 0;
+    this._shakeScale = () => 1;
 
     // Screen flash — parented to the camera so it can never peek into the
     // frustum from the side at any view pose (world-space planes used to flicker in corners)
@@ -67,8 +68,14 @@ export class Effects {
     }
   }
 
+  /** Accessibility: scale all screen shake (0 = off, 1 = default). */
+  setShakeScale(fn) {
+    this._shakeScale = typeof fn === 'function' ? fn : () => (fn ? 1 : 0);
+  }
+
   triggerShake(magnitude, duration) {
-    this.shakeMagnitude = magnitude;
+    const scale = Number(this._shakeScale());
+    this.shakeMagnitude = magnitude * (Number.isFinite(scale) ? Math.max(0, scale) : 1);
     this.shakeDuration = duration;
     this.shakeTime = duration;
   }

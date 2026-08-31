@@ -6,6 +6,7 @@ export class BallRenderer {
     this.trailLength = 10;
     this.trailPositions = [];
     this.lastTrailPos = null;
+    this.trailPalette = CONFIG.comboColors;
 
     // Ball mesh
     const geo = new THREE.SphereGeometry(CONFIG.ball.radius, 32, 32);
@@ -97,6 +98,11 @@ export class BallRenderer {
     this.ghostHidden = !!hidden;
   }
 
+  /** Accessibility: swap the combo hue ramp (e.g. colorblind-safe Okabe-Ito). */
+  setTrailPalette(palette) {
+    if (Array.isArray(palette) && palette.length > 0) this.trailPalette = palette;
+  }
+
   update(balls, dt = 1 / 60, combo = 0) {
     if (!Array.isArray(balls)) balls = [balls];
     const primary = balls[0];
@@ -169,7 +175,7 @@ export class BallRenderer {
     // Trail intensity scales with speed; hue walks the combo palette
     this.ghostFade = (this.ghostFade || 0) + ((this.ghostHidden ? 1 : 0) - (this.ghostFade || 0)) * Math.min(1, dt * 8);
     const ghostMul = 1 - this.ghostFade * 0.85;
-    const palette = CONFIG.comboColors;
+    const palette = this.trailPalette;
     const comboColor = new THREE.Color(palette[Math.min(Math.floor(combo / 3), palette.length - 1)]);
     const trailMix = Math.min(combo / 12, 0.75);
     const trailColor = color.clone().lerp(comboColor, trailMix);

@@ -77,6 +77,8 @@ export const CONFIG = {
   },
 
   comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
+  // Okabe-Ito palette: distinguishable under common color-vision deficiencies.
+  comboColorsCB: [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0xcc79a7],
   paddleShifts: {
     edgeThreshold: 0.65,
     centerThreshold: 0.2,

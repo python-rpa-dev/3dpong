@@ -203,8 +203,26 @@
           Gamepad support (pad 1 = P1, pad 2 = P2 in versus)
         </label>
       </div>
+      <div class="settings-group">
+        <h3>ACCESSIBILITY</h3>
+        <div class="setting-row">
+          <label for="setting-shake">Screen shake: <span id="setting-shake-val">100%</span></label>
+          <input type="range" id="setting-shake" min="0" max="150" step="25" value="100">
+        </div>
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-cbtrail">
+          Colorblind-safe trail palette (Okabe–Ito)
+        </label>
       </div>
-      
+        <div class="setting-row checkbox-row">
+        <label>
+          <input type="checkbox" id="setting-sound" checked>
+          Sound (M toggles mute in game)
+        </label>
+      </div>
+      </div>
+
 <button id="btn-save-settings" class="neon-btn">SAVE</button>
       <button id="btn-back" class="neon-btn">BACK</button>
     </div>

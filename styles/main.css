@@ -296,7 +296,8 @@ body {
   font-size: 14px;
 }
 
-#view-controls input[type="range"] {
+#view-controls input[type="range"],
+#setting-shake {
   width: 90px;
   accent-color: #00e5ff;
 }

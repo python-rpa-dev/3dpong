@@ -33,6 +33,8 @@ const paddleRenderer = new PaddleRenderer(scene.scene);
 const powerupRenderer = new PowerupRenderer(scene.scene);
 const aimIndicator = new AimIndicator(scene.scene);
 const effects = new Effects(scene.scene, camera);
+effects.setShakeScale(() => settings.get('shakeIntensity'));
+audio.enabled = settings.get('soundOn') !== false;
 const game = new Game(settings, records);
 const ui = new UI(game, settings);
 ui.setRecords(records);
@@ -62,6 +64,10 @@ function gameLoop(time) {
     if (scene.bloomEnabled !== settings.get('bloom')) {
       scene.setBloom(settings.get('bloom'));
     }
+    const soundOn = Boolean(settings.get('soundOn'));
+    if (audio.enabled !== soundOn) audio.enabled = soundOn;
+    const trailPalette = settings.get('cbTrail') ? CONFIG.comboColorsCB : CONFIG.comboColors;
+    if (ballRenderer.trailPalette !== trailPalette) ballRenderer.setTrailPalette(trailPalette);
     if (settings.get('gamepad')) gamepadInput.update(dt);
     game.update(dt);
     handleGameEvents(game.drainEvents());

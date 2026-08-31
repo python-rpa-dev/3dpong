@@ -46,6 +46,16 @@ export class UI {
     document.getElementById('setting-music').checked = settings.get('music');
     document.getElementById('setting-gamepad').checked = settings.get('gamepad');
     document.getElementById('setting-daily').checked = settings.get('dailyChallenge');
+    document.getElementById('setting-cbtrail').checked = Boolean(settings.get('cbTrail'));
+    document.getElementById('setting-sound').checked = settings.get('soundOn') !== false;
+    this.shakeEl = document.getElementById('setting-shake');
+    this.shakeValEl = document.getElementById('setting-shake-val');
+    const shakePct = Math.round((settings.get('shakeIntensity') ?? 1) * 100);
+    this.shakeEl.value = String(shakePct);
+    this.shakeValEl.textContent = `${shakePct}%`;
+    this.shakeEl.addEventListener('input', () => {
+      this.shakeValEl.textContent = `${this.shakeEl.value}%`;
+    });
     this.suddenDeathEl = document.getElementById('setting-suddendeath');
     this.suddenDeathEl.checked = settings.get('suddenDeath');
     this.updateSuddenDeathGate();
@@ -212,6 +222,10 @@ export class UI {
     this.settings.set('music', document.getElementById('setting-music').checked);
     this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
     this.settings.set('dailyChallenge', document.getElementById('setting-daily').checked);
+    this.settings.set('cbTrail', document.getElementById('setting-cbtrail').checked);
+    this.settings.set('soundOn', document.getElementById('setting-sound').checked);
+    const shakePct = parseInt(document.getElementById('setting-shake').value, 10);
+    this.settings.set('shakeIntensity', Number.isFinite(shakePct) ? Math.max(0, shakePct / 100) : 1);
     const suddenDeathUnlocked = !!this.records && this.records.has('double_stack');
     this.settings.set('suddenDeath', suddenDeathUnlocked && this.suddenDeathEl.checked);
     this.settings.save();
@@ -415,6 +429,12 @@ export class UI {
     const vertical = this.settings.get('steerAxis') === 'vertical';
     const key = remapSteerKey(e.key, vertical);
     this.pressSteerKey(e.key, key);
+
+    // Master sound hotkey: M mutes/unmutes (also flips the settings checkbox on next open)
+    if (e.key === 'm' || e.key === 'M') {
+      this.settings.set('soundOn', !this.settings.get('soundOn'));
+      this.settings.save();
+    }
 
     if (key === ' ' || key === 'p' || key === 'P') {
       e.preventDefault();
