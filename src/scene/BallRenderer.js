@@ -106,6 +106,10 @@ export class BallRenderer {
   update(balls, dt = 1 / 60, combo = 0) {
     if (!Array.isArray(balls)) balls = [balls];
     const primary = balls[0];
+    // Ghost fade must be known before anything (incl. ground shadows) is drawn
+    this.ghostFade = (this.ghostFade || 0) + ((this.ghostHidden ? 1 : 0) - (this.ghostFade || 0)) * Math.min(1, dt * 8);
+    const ghostMul = 1 - this.ghostFade * 0.85;
+    const shadowOpacity = 0.35 * (1 - this.ghostFade * 0.95);
 
     // Decay squash & stretch
     this.squash = Math.max(0, this.squash - dt * 6);
@@ -127,6 +131,7 @@ export class BallRenderer {
       view.light.intensity = 1;
       view.shadow.visible = true;
       view.shadow.position.set(ball.x, 0.02, ball.z);
+      view.shadow.material.opacity = shadowOpacity;
     }
 
     const ball = primary;
@@ -154,8 +159,9 @@ export class BallRenderer {
 
     this.mesh.visible = true;
 
-    // Ground shadow tracks the ball, swells slightly during squash
+    // Ground shadow tracks the ball, swells slightly during squash; fades with ghost
     this.shadow.visible = true;
+    this.shadow.material.opacity = shadowOpacity;
     this.shadow.position.set(ball.x, 0.02, ball.z);
     const shadowScale = 1 + s * 0.35;
     this.shadow.scale.set(shadowScale, shadowScale, 1);
@@ -173,8 +179,6 @@ export class BallRenderer {
     this.light.intensity = 0.8 + speedRatio * 1.2;
 
     // Trail intensity scales with speed; hue walks the combo palette
-    this.ghostFade = (this.ghostFade || 0) + ((this.ghostHidden ? 1 : 0) - (this.ghostFade || 0)) * Math.min(1, dt * 8);
-    const ghostMul = 1 - this.ghostFade * 0.85;
     const palette = this.trailPalette;
     const comboColor = new THREE.Color(palette[Math.min(Math.floor(combo / 3), palette.length - 1)]);
     const trailMix = Math.min(combo / 12, 0.75);

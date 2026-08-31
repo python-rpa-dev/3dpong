@@ -66,7 +66,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Feel & juice
 
-10. **Ball shadow/ground indicator** — readability win at extreme camera tilts.
+10. ✅ **Ball shadow/ground indicator** — readability win at extreme camera tilts. (Shipped; ghost powerup no longer leaks the hidden ball via its ground shadow.)
 11. **Slow-mo on match point** — brief time dilation + audio duck on game/match-point serves.
 12. ✅ **Hit-stop freeze** — ~30 ms freeze frame on big combo hits.
 13. **Ambient stadium reactions** — procedural crowd murmur swelling with rally length (Web Audio, no assets).
