@@ -379,6 +379,7 @@ export class Game {
     // Hit-stop: brief simulation freeze so impacts register (visuals keep animating)
     if (this.hitStopTimer > 0 && (this.state === STATES.PLAYING || this.state === STATES.SCORED)) {
       this.hitStopTimer -= dt;
+      for (const b of this.balls) { b.prevX = b.x; b.prevZ = b.z; }
       return;
     }
 

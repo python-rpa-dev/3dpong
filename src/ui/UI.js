@@ -103,6 +103,64 @@ export class UI {
     this.viewYawEl.addEventListener('input', emitView);
     this.viewTiltEl.addEventListener('input', emitView);
     this.viewZoomEl.addEventListener('input', emitView);
+
+    // Right-drag on the court rotates the view (yaw), wheel zooms; both drive
+    // the sliders so settings, sliders and camera stay in sync. Steering is
+    // suppressed while dragging so the paddle doesn't chase the mouse.
+    const canvasEl = document.getElementById('game-canvas');
+    this._viewDrag = null;
+    canvasEl.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvasEl.addEventListener('pointerdown', (e) => {
+      if (e.button !== 2 || e.pointerType !== 'mouse' || this._viewDrag) return;
+      this._viewDrag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      canvasEl.setPointerCapture(e.pointerId);
+    });
+    const endViewDrag = (e) => {
+      if (this._viewDrag && e.pointerId === this._viewDrag.id) {
+        this._viewDrag = null;
+        // Re-arm the steering anchor so the paddle doesn't jump by the
+        // horizontal distance travelled during the view drag.
+        this.resetMouseAnchor();
+      }
+    };
+    canvasEl.addEventListener('pointerup', endViewDrag);
+    canvasEl.addEventListener('pointercancel', endViewDrag);
+    // Alt-tab etc. can swallow the pointerup; never strand steering suppression
+    window.addEventListener('blur', () => {
+      if (this._viewDrag) {
+        this._viewDrag = null;
+        this.resetMouseAnchor();
+      }
+    });
+    canvasEl.addEventListener('pointermove', (e) => {
+      if (!this._viewDrag || e.pointerId !== this._viewDrag.id) return;
+      const dx = e.clientX - this._viewDrag.x;
+      const dy = e.clientY - this._viewDrag.y;
+      this._viewDrag.x = e.clientX;
+      this._viewDrag.y = e.clientY;
+      if (dx) {
+        const min = Number(this.viewYawEl.min), max = Number(this.viewYawEl.max);
+        const next = Math.max(min, Math.min(max, Number(this.viewYawEl.value) + dx * 0.3));
+        this.viewYawEl.value = String(Math.round(next));
+        this.viewYawEl.dispatchEvent(new Event('input'));
+      }
+      if (dy) {
+        // Vertical drag orbits the camera up/down via the tilt slider
+        const min = Number(this.viewTiltEl.min), max = Number(this.viewTiltEl.max);
+        const next = Math.max(min, Math.min(max, Number(this.viewTiltEl.value) + dy * 0.35));
+        this.viewTiltEl.value = String(Math.round(next));
+        this.viewTiltEl.dispatchEvent(new Event('input'));
+      }
+    });
+    canvasEl.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const cur = Number(this.viewZoomEl.value);
+      const next = Math.max(0, Math.min(100, cur + (e.deltaY > 0 ? -5 : 5)));
+      if (next === cur) return;
+      this.viewZoomEl.value = String(next);
+      this.viewZoomEl.dispatchEvent(new Event('input'));
+    }, { passive: false });
+
     this.swapSidesBtn.addEventListener('click', () => {
       this.settings.set('sideSwap', !this.settings.get('sideSwap'));
       this.settings.save();
@@ -283,27 +341,37 @@ export class UI {
 
     // Only react to state changes, not every frame
     if (state === this.prevState) {
-      // Still update score + combo text during gameplay
+      // Still update score + combo text during gameplay (only on change —
+      // per-frame DOM writes invalidate layout and cause render jank)
       if (state === 'PLAYING' || state === 'SERVE' || state === 'SCORED') {
-        this.playerScoreEl.textContent = this.game.score.playerScore;
-        this.opponentScoreEl.textContent = this.game.score.opponentScore;
+        const ps = this.game.score.playerScore;
+        const os = this.game.score.opponentScore;
+        if (ps !== this._lastPs) { this.playerScoreEl.textContent = ps; this._lastPs = ps; }
+        if (os !== this._lastOs) { this.opponentScoreEl.textContent = os; this._lastOs = os; }
 
         // Combo display (fun mode only)
-        if ((this.game.isFunMode() || this.game.isBossMode() || this.game.isLadderMode()) && this.game.rallyCombo > 1) {
+        const combo = this.game.rallyCombo;
+        if ((this.game.isFunMode() || this.game.isBossMode() || this.game.isLadderMode()) && combo > 1) {
           this.comboDisplay.classList.remove('hidden');
-          this.comboCountEl.textContent = this.game.rallyCombo;
-          // Color shifts with combo
-          const colors = CONFIG.comboColors;
-          const idx = Math.min(Math.floor(this.game.rallyCombo / 3), colors.length - 1);
-          this.comboCountEl.style.color = '#' + colors[idx].toString(16).padStart(6, '0');
-        } else {
+          if (combo !== this._lastCombo) {
+            this.comboCountEl.textContent = combo;
+            // Color shifts with combo
+            const colors = CONFIG.comboColors;
+            const idx = Math.min(Math.floor(combo / 3), colors.length - 1);
+            this.comboCountEl.style.color = '#' + colors[idx].toString(16).padStart(6, '0');
+            this._lastCombo = combo;
+          }
+        } else if (this._lastCombo !== 0) {
           this.comboDisplay.classList.add('hidden');
+          this._lastCombo = 0;
         }
       }
       return;
     }
 
     this.prevState = state;
+    this._lastPs = null;
+    this._lastOs = null;
 
     if (state === 'MENU') {
       if (!this.showingSettings) {
@@ -620,6 +688,8 @@ export class UI {
   onPointerMove(e) {
     const steering = this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED';
     if (e.pointerType === 'mouse') {
+      // Right-drag view rotation must not steer the paddle
+      if (this._viewDrag) return;
       if (!steering || !this._screenToWorld) { this.resetMouseAnchor(); return; }
       const half = CONFIG.court.width / 2;
       let wx;

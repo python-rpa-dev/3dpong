@@ -11,6 +11,10 @@ export const CONFIG = {
     initialSpeed: 15,
     speedIncrement: 0.03,
     maxSpeed: 40,
+    // Velocity smear (pseudo motion blur): stretch along travel direction so
+    // fast depth-wise motion reads continuous at high zoom / near camera.
+    smearGain: 1.2,
+    smearMax: 0.5,
   },
   paddle: {
     width: 5,

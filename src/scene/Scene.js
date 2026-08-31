@@ -31,7 +31,14 @@ export class Scene {
   setBloom(enabled) {
     if (enabled && !this.composer) {
       const { strength, radius, threshold } = CONFIG.postfx.bloom;
-      this.composer = new EffectComposer(this.renderer);
+      // Composer targets have no MSAA by default — without this, enabling
+      // bloom silently disables antialiasing and moving edges shimmer.
+      const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+      const rt = new THREE.WebGLRenderTarget(size.x, size.y, {
+        type: THREE.HalfFloatType,
+        samples: 4,
+      });
+      this.composer = new EffectComposer(this.renderer, rt);
       this.renderPass = new RenderPass(this.scene, null);
       this.bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),

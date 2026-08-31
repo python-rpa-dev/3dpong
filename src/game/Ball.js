@@ -4,6 +4,8 @@ export class Ball {
   constructor() {
     this.x = 0;
     this.z = 0;
+    this.prevX = 0;
+    this.prevZ = 0;
     this.vx = 0;
     this.vz = 0;
     this.speed = CONFIG.ball.initialSpeed;
@@ -17,6 +19,7 @@ export class Ball {
   reset(direction, aimX = null, rng = Math.random) {
     this.x = 0;
     this.z = 0;
+    this.prevX = 0;
     this.prevZ = 0;
     this.speed = this.baseSpeed;
     this.speedMultiplier = 1;
@@ -31,6 +34,7 @@ export class Ball {
 
   update(dt) {
     if (!this.active) return;
+    this.prevX = this.x;
     this.prevZ = this.z;
     this.x += this.vx * dt;
     this.z += this.vz * dt;
