@@ -1,4 +1,4 @@
-import { CONFIG } from '../config.js';
+import { CONFIG, COURT_SKINS, resolveCourtSkin } from '../config.js';
 import { dailySeed } from '../game/rng.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
 import { remapSteerKey } from '../input/steerKeys.js';
@@ -56,6 +56,7 @@ export class UI {
     this.shakeEl.addEventListener('input', () => {
       this.shakeValEl.textContent = `${this.shakeEl.value}%`;
     });
+    this.updateSkinOptions();
     this.suddenDeathEl = document.getElementById('setting-suddendeath');
     this.suddenDeathEl.checked = settings.get('suddenDeath');
     this.updateSuddenDeathGate();
@@ -193,6 +194,7 @@ export class UI {
   showSettings() {
     this.showingSettings = true;
     this.updateSuddenDeathGate();
+    this.updateSkinOptions();
     this.hideAllScreens();
     this.settingsScreen.classList.remove('hidden');
   }
@@ -226,6 +228,8 @@ export class UI {
     this.settings.set('soundOn', document.getElementById('setting-sound').checked);
     const shakePct = parseInt(document.getElementById('setting-shake').value, 10);
     this.settings.set('shakeIntensity', Number.isFinite(shakePct) ? Math.max(0, shakePct / 100) : 1);
+    const skin = resolveCourtSkin(document.getElementById('setting-skin').value, (id) => !!this.records && this.records.has(id));
+    this.settings.set('courtSkin', skin.id);
     const suddenDeathUnlocked = !!this.records && this.records.has('double_stack');
     this.settings.set('suddenDeath', suddenDeathUnlocked && this.suddenDeathEl.checked);
     this.settings.save();
@@ -473,6 +477,24 @@ export class UI {
     this.records = records;
     this.updateMenuRecords();
     this.updateSuddenDeathGate();
+    this.updateSkinOptions();
+  }
+
+  /** Rebuild the court skin dropdown; locked skins are disabled until earned. */
+  updateSkinOptions() {
+    const sel = document.getElementById('setting-skin');
+    if (!sel || typeof sel.appendChild !== 'function') return;
+    const unlocked = (id) => !!this.records && this.records.has(id);
+    sel.innerHTML = '';
+    for (const skin of COURT_SKINS) {
+      const open = !skin.unlock || unlocked(skin.unlock);
+      const opt = document.createElement('option');
+      opt.value = skin.id;
+      opt.textContent = open ? skin.name : `${skin.name} (LOCKED)`;
+      opt.disabled = !open;
+      sel.appendChild(opt);
+    }
+    sel.value = resolveCourtSkin(this.settings.get('courtSkin'), unlocked).id;
   }
 
   /** Sudden death is unlockable, so the option stays disabled until it is earned. */

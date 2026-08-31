@@ -122,3 +122,18 @@ export const CONFIG = {
     extraBallSpeedFactor: 0.85,
   },
 };
+
+/** Court skins: cosmetic palette variants, some gated behind achievements. */
+export const COURT_SKINS = [
+  { id: 'default', name: 'NEON NIGHT', unlock: null },
+  { id: 'sunset', name: 'SUNSET DRIFT', unlock: 'first_win', colors: { wall: 0x5a2d3c, net: 0xff9e6e, floorTop: '#3a1626', floorBottom: '#6e2f14', heat: 0xff6b3d } },
+  { id: 'toxic', name: 'TOXIC LAB', unlock: 'grazer_3', colors: { wall: 0x1f3d2b, net: 0x7cffb2, floorTop: '#0e2418', floorBottom: '#1d3a10', heat: 0x9dff4a } },
+  { id: 'abyss', name: 'DEEP ABYSS', unlock: 'ladder_clear', colors: { wall: 0x101c3a, net: 0x6ea8ff, floorTop: '#050a1e', floorBottom: '#12204d', heat: 0x3da6ff } },
+];
+
+/** Resolve a skin id to a usable skin; locked or unknown ids fall back to the default. */
+export function resolveCourtSkin(id, unlocked = () => false) {
+  const skin = COURT_SKINS.find((s) => s.id === id);
+  if (!skin || (skin.unlock && !unlocked(skin.unlock))) return COURT_SKINS[0];
+  return skin;
+}

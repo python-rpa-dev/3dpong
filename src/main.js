@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js';
+import { CONFIG, resolveCourtSkin } from './config.js';
 import { Scene } from './scene/Scene.js';
 import { Camera } from './scene/Camera.js';
 import { CourtRenderer } from './scene/CourtRenderer.js';
@@ -68,6 +68,8 @@ function gameLoop(time) {
     if (audio.enabled !== soundOn) audio.enabled = soundOn;
     const trailPalette = settings.get('cbTrail') ? CONFIG.comboColorsCB : CONFIG.comboColors;
     if (ballRenderer.trailPalette !== trailPalette) ballRenderer.setTrailPalette(trailPalette);
+    const skin = resolveCourtSkin(settings.get('courtSkin'), (id) => records.has(id));
+    if (courtRenderer.skin !== skin) courtRenderer.setSkin(skin);
     if (settings.get('gamepad')) gamepadInput.update(dt);
     game.update(dt);
     handleGameEvents(game.drainEvents());
