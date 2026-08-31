@@ -1,0 +1,6 @@
+#!/bin/sh
+# Rebuild the single-file dist after every commit (was in .git/hooks before githooks/).
+node node_modules/vite/bin/vite.js build >/dev/null 2>&1 || echo "post-commit: vite build failed - run it manually" >&2
+
+# Agents working via a shell must see this and sync their todo list.
+echo "AGENT-REMINDER post-commit $(git log -1 --format='%h %s'): update your todowrite list now (mark the committed task completed, queue any follow-ups)." >&2
