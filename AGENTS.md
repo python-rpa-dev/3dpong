@@ -48,7 +48,7 @@
 
 - **Spec**: `pong3d-spec.md` (authoritative — all decisions trace back here)
 - **Engine**: Three.js (WebGL)
-- **Build**: Vite (dev) / esbuild (single-file dist)
+- **Build**: Vite (dev + single-file dist via vite-plugin-singlefile)
 - **Language**: JavaScript (ES modules)
 - **No framework** — vanilla JS + Three.js
 
@@ -139,8 +139,8 @@ These can be worked on **simultaneously** by different agents:
 | Task | Files |
 |---|---|
 | Unit tests | `tests/*.test.js` |
-| Build config | `vite.config.js`, `esbuild` script |
-| Single-file build | `dist/pong3d.html` |
+| Build config | `vite.config.js` (+ vite-plugin-singlefile) |
+| Single-file build | `dist/index.html` |
 | Acceptance testing | All criteria from spec section 11 |
 
 ### Interface Contracts
@@ -158,11 +158,8 @@ npm install
 # Dev server (Vite)
 npx vite
 
-# Build for production (modular)
+# Build for production (single-file dist via vite-plugin-singlefile)
 npx vite build
-
-# Build single-file (esbuild)
-npx esbuild src/main.js --bundle --minify --outfile=dist/bundle.js
 
 # Run tests
 npx vitest run
@@ -178,7 +175,7 @@ npx vitest
 - **Unit tests**: Physics (ball bounce, paddle angle), scoring (win condition, deuce), AI (tracking, reaction delay).
 - **Integration tests**: Game flow (serve → rally → score → game over).
 - **Acceptance tests**: All 20 criteria from spec section 11.
-- **Single-file test**: Open `dist/pong3d.html` via `file://`, verify no network requests, full playability.
+- **Single-file test**: Open `dist/index.html` via `file://`, verify no network requests, full playability.
 
 **A change is ready to commit to `dev` when:**
 1. `npx vitest run` passes
@@ -235,7 +232,7 @@ npx vitest
 ├── styles/
 │   └── main.css
 └── dist/
-    └── pong3d.html
+    └── index.html
 ```
 
 ---

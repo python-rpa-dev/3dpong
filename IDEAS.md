@@ -29,13 +29,13 @@ Implement one at a time on `dev`, commit each separately.
 ### Quick wins (small)
 
 1. ✅ **Daily challenge scoring** — best result per date-keyed seed in Records; "today's run" line on the menu. Completes mode #10, which currently only seeds the RNG.
-2. **Accessibility sliders** — screen-shake intensity, colorblind-safe trail palette option, master-volume hotkey.
-3. **Pause-menu restart + match stats** — restart button and current-match readout (longest rally, top speed, grazes).
+2. ✅ **Accessibility sliders** — screen-shake intensity, colorblind-safe trail palette option, master-volume hotkey.
+3. ✅ **Pause-menu restart + match stats** — restart button and current-match readout (longest rally, top speed, grazes).
 
 ### Medium
 
 4. ✅ **Touch controls** — drag-to-move paddle so the game works on phones/tablets.
-5. **Boss Rush ladder** — beat all three bosses in sequence with escalating difficulty instead of one random boss.
+5. ✅ **Boss Rush ladder** — beat all three bosses in sequence with escalating difficulty instead of one random boss.
 6. **Unlockable court skins** — palette variants tied to achievements.
 ✅ 7. **View angle sliders (viewport)** — horizontal/vertical sliders that orbit/pan the camera around the court (yaw + tilt), default = current pose, soft-animated transitions; keyboard aiming must stay correct at any angle.
 ✅ 8. **Side swap toggle** — button to trade places with the opponent (view from the far end); same pose system as #7 with a 180° yaw offset; default = current view.
@@ -75,6 +75,24 @@ Implement one at a time on `dev`, commit each separately.
 
 14. **Share cards** — end screen emits a text/PNG result card ("21-17 vs Metronome, best 14-rally, seed 20260829").
 15. **Replay theater** — watch input-log replays with camera controls (builds on round 2 #9).
+
+---
+
+## Round 4 backlog
+
+### New powerups
+
+1. **Shield** — one-time goal save: next incoming goal is blocked at the line, shield pops. Counterweight to freeze/shrink being punishing.
+2. **Echo paddle** — a ghost paddle hovers on your goal line for ~6s and blocks one shot; covers only part of the line, so positioning still matters.
+3. **Turbo** — ball +40% speed until *you* score or concede. Stacks with combo scoring; glass-cannon play.
+4. **Big ball** — 2x ball size for ~6s: easier for you to return, less reaction time for the opponent. Symmetric and readable.
+5. **Vortex tile** — a glowing tile drifts on the court; ball deflects off it once. Shares the tile language with hazard zones (round 3 #2) — build them on one tile system.
+6. **Magnet** — ball curves slightly toward your paddle face when approaching within ~1 unit; strong late returns, weaker angle shots.
+7. **Drain** — steals remaining duration of the opponent's active timed powerup and applies it to you. Drafts make this visible-knowledge mind games.
+
+### Systems
+
+8. **Cumulative powerups** — collected powerups persist and stack across rallies/matches instead of expiring. *Double points* is the perfect candidate (x2 -> x4 -> x8 stacking). Award a trophy for collecting them; use collection milestones to unlock other mechanics, e.g. **sudden death** mode (next point wins) as an achievement-gated unlock.
 
 ---
 

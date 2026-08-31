@@ -3,21 +3,7 @@ import { Game } from '../src/game/Game.js';
 import { PlayerPaddle } from '../src/game/PlayerPaddle.js';
 import { AIPaddle } from '../src/game/AIPaddle.js';
 import { CONFIG } from '../src/config.js';
-
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 11,
-    deuce: false,
-    gameMode: 'classic',
-    playerMode: 'ai',
-    powerups: false,
-    multiBall: false,
-    paddleShifts: false,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
+import { makeSettings } from './helpers.js';
 
 describe('Versus mode', () => {
   it('creates a second player paddle on the AI side when versus', () => {

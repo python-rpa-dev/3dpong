@@ -2,23 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { GamepadInput } from '../src/input/GamepadInput.js';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
-
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 11,
-    deuce: false,
-    gameMode: 'classic',
-    playerMode: 'ai',
-    powerups: false,
-    multiBall: false,
-    paddleShifts: false,
-    aiTaunts: false,
-    netGraze: false,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
+import { makeSettings } from './helpers.js';
 
 describe('GamepadInput', () => {
   it('moves P1 paddle with stick axis (stick right -> screen right)', () => {

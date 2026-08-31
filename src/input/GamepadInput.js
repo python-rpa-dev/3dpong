@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { flipIf } from './steerTransform.js';
 
 const DEADZONE = 0.15;
 
@@ -25,9 +26,25 @@ export class GamepadInput {
     return list;
   }
 
+  /** Re-anchor cached targets when the game swaps paddle instances (mode change, new match). */
+  syncTargets(paddles) {
+    if (!this._refs || this._refs.length !== paddles.length) {
+      this.targets = paddles.map((p) => p.x);
+      this._refs = paddles.slice();
+      return;
+    }
+    for (let i = 0; i < paddles.length; i++) {
+      if (this._refs[i] !== paddles[i]) {
+        this._refs[i] = paddles[i];
+        this.targets[i] = paddles[i].x;
+      }
+    }
+  }
+
   update(dt) {
     const pads = this.getGamepads() || [];
     const paddles = this.activePaddles();
+    this.syncTargets(paddles);
     const vertical = this.game.settings?.get('steerAxis') === 'vertical';
     for (let i = 0; i < paddles.length; i++) {
       const pad = pads[i];
@@ -50,7 +67,7 @@ export class GamepadInput {
       }
       if (!axis) continue;
       // Under a side swap the screen is mirrored; flip stick/dpad so it matches what the player sees.
-      if (this.game.settings?.get('sideSwap')) axis = -axis;
+      axis = flipIf(axis, Boolean(this.game.settings?.get('sideSwap')));
       const paddle = paddles[i];
       if (typeof paddle.setWorldTarget !== 'function') continue; // AI-controlled in this mode
       // World +x is screen-left under this camera, so stick-right decreases x

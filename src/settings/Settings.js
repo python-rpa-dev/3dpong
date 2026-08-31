@@ -1,10 +1,11 @@
 const STORAGE_KEY = 'pong3d_settings';
 
-const DEFAULTS = {
+export const DEFAULTS = {
   difficulty: 'medium',
   winScore: 11,
   deuce: true,
   gameMode: 'fun',
+  suddenDeath: false,
   playerMode: 'ai',
   powerups: true,
   drafts: true,
@@ -22,6 +23,10 @@ const DEFAULTS = {
   viewZoom: 0,
   sideSwap: false,
   steerAxis: 'horizontal',
+  mouseSensitivity: 1,
+  shakeIntensity: 1,
+  cbTrail: false,
+  soundOn: true,
 };
 
 export class Settings {

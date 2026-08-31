@@ -9,6 +9,7 @@ export class Effects {
     this.shakeTime = 0;
     this.shakeDuration = 0;
     this.shakeMagnitude = 0;
+    this._shakeScale = () => 1;
 
     // Screen flash — parented to the camera so it can never peek into the
     // frustum from the side at any view pose (world-space planes used to flicker in corners)
@@ -67,8 +68,14 @@ export class Effects {
     }
   }
 
+  /** Accessibility: scale all screen shake (0 = off, 1 = default). */
+  setShakeScale(fn) {
+    this._shakeScale = typeof fn === 'function' ? fn : () => (fn ? 1 : 0);
+  }
+
   triggerShake(magnitude, duration) {
-    this.shakeMagnitude = magnitude;
+    const scale = Number(this._shakeScale());
+    this.shakeMagnitude = magnitude * (Number.isFinite(scale) ? Math.max(0, scale) : 1);
     this.shakeDuration = duration;
     this.shakeTime = duration;
   }
@@ -86,7 +93,7 @@ export class Effects {
     if (!ring) return;
     ring.mesh.position.set(x, y, z);
     ring.mesh.rotation.set(0, 0, 0);
-    const color = CONFIG.fun.comboColors[Math.min(combo - 1, CONFIG.fun.comboColors.length - 1)] || 0xffffff;
+    const color = CONFIG.comboColors[Math.min(combo - 1, CONFIG.comboColors.length - 1)] || 0xffffff;
     ring.mesh.material.color.setHex(color);
     ring.mesh.material.opacity = 1;
     ring.mesh.scale.set(1, 1, 1);
@@ -143,12 +150,6 @@ export class Effects {
       p.mesh.material.opacity = 1;
       p.mesh.visible = true;
     }
-  }
-
-  triggerShake(magnitude, duration) {
-    this.shakeMagnitude = magnitude;
-    this.shakeDuration = duration;
-    this.shakeTime = duration;
   }
 
   findParticle() {

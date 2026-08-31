@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
+import { makeSettings as baseSettings } from './helpers.js';
 
-const makeSettings = (overrides = {}) => ({
-  data: { gameMode: 'fun', paddleShifts: true, powerups: false, multiBall: false, difficulty: 'medium', winScore: 11, ...overrides },
-  get(key) { return this.data[key]; },
-});
+const makeSettings = (overrides = {}) => baseSettings({ gameMode: 'fun', paddleShifts: true, difficulty: 'medium', ...overrides });
 
 describe('Paddle shifts', () => {
   const base = CONFIG.paddle.width;

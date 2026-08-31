@@ -5,7 +5,8 @@ import { Score } from './Score.js';
 import { Court } from './Court.js';
 import { PowerupManager } from './Powerups.js';
 import { pickPersonality } from './AIPersonality.js';
-import { pickBoss, BOSS_TUNING } from './Boss.js';
+import { pickBoss, bossRules, BOSS_TUNING } from './Boss.js';
+import { bossFor, ladderStage as stageAt, LADDER } from './Encounters.js';
 import { mulberry32, dailySeed } from './rng.js';
 import { CONFIG } from '../config.js';
 
@@ -42,17 +43,21 @@ export class Game {
     this.lastHitter = null;
     this.timeScale = 1;
     this.activeEffects = [];
-    this.doublePoints = { player: 0, ai: 0 };
+    this.resetPointBoost();
+    this._peakDoubleMult = 1;
     this.hitStopTimer = 0;
     this.serveAimX = 0;
     this._tauntedImpressed = false;
     this.pointStreak = 0;
     this._lastScorer = null;
-    this._gameOverSoundPlayed = false;
     this._grazes = 0;
+    this._topSpeed = 0;
     this._shrinks = 0;
     this._minMargin = 0;
     this.boss = null;
+    this.encounter = null;
+    this.ladderStage = 0;
+    this.ladderCleared = false;
     this._bossTimer = 0;
     this.rng = Math.random;
     this.stockedPowerup = null;
@@ -66,6 +71,15 @@ export class Game {
 
   isBossMode() {
     return this.settings.get('gameMode') === 'boss';
+  }
+
+  isLadderMode() {
+    return this.settings.get('gameMode') === 'ladder';
+  }
+
+  /** Current-match readout for the pause menu. */
+  get matchStats() {
+    return { longestRally: this.maxRallyCombo, topSpeed: this._topSpeed, grazes: this._grazes };
   }
 
   isVersus() {
@@ -125,6 +139,29 @@ export class Game {
 
   powerupsEnabled() {
     return this.isFunMode() && this.settings.get('powerups');
+  }
+
+  /** Cross-match carry; never in versus or dailies (daily scores must stay comparable). */
+  loadoutEnabled() {
+    return this.powerupsEnabled() && !!this.records && !this.isVersus() && !this.settings.get('dailyChallenge');
+  }
+
+  /** Next point wins; achievement-gated, and off in dailies so seeds stay comparable. */
+  suddenDeathEnabled() {
+    return this.settings.get('suddenDeath') && !!this.records && this.records.has('double_stack')
+      && !this.settings.get('dailyChallenge');
+  }
+
+  /** Restore the banked double-points multiplier into a fresh match. */
+  seedLoadout() {
+    this._peakDoubleMult = 1;
+    if (!this.loadoutEnabled()) return;
+    const mult = Math.min(Math.max(1, this.records.loadoutMult('double')), CONFIG.powerups.doubleMaxMult);
+    if (mult <= 1) return;
+    const goalsLeft = CONFIG.powerups.loadoutGoals;
+    this.doublePoints.player = { mult, goalsLeft };
+    this.activeEffects.push({ type: 'double', target: 'player', goalsLeft, mult });
+    this._peakDoubleMult = mult;
   }
 
   draftsEnabled() {
@@ -188,7 +225,7 @@ export class Game {
   }
 
   recordRally() {
-    if (this.records && this.records.noteRally(this.rallyCombo)) {
+    if (this.achievementsEnabled() && this.records.noteRally(this.rallyCombo)) {
       this.events.push({ type: 'record', kind: 'rally', value: this.rallyCombo });
     }
     if (this.achievementsEnabled() && this.rallyCombo >= 20) {
@@ -214,27 +251,40 @@ export class Game {
 
   /** Boss special rules, ticked every frame during PLAYING. */
   tickBoss(dt) {
-    if (!this.boss) return;
-    if (this.boss.id === 'freezer') {
-      this._bossTimer += dt;
-      if (this._bossTimer >= BOSS_TUNING.freezerInterval) {
-        this._bossTimer = 0;
-        this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === 'player'));
-        this.activeEffects.push({ type: 'freeze', target: 'player', timeLeft: BOSS_TUNING.freezeDuration });
-        this.applyModifiers();
-        this.events.push({ type: 'boss', bossId: 'freezer', effect: 'freeze', label: this.boss.label });
-      }
+    const rules = bossRules(this.boss);
+    if (!rules || !rules.onInterval) return;
+    this._bossTimer += dt;
+    if (this._bossTimer >= rules.interval) {
+      this._bossTimer = 0;
+      rules.onInterval(this);
     }
+  }
+
+  bossFreeze(duration) {
+    this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === 'player'));
+    this.activeEffects.push({ type: 'freeze', target: 'player', timeLeft: duration });
+    this.applyModifiers();
+    this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'freeze', label: this.boss.label });
   }
 
   bossShrinkPlayer() {
     this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shrink' && e.target === 'player'));
     this.activeEffects.push({ type: 'shrink', target: 'player', scale: BOSS_TUNING.shrinkScale, timeLeft: BOSS_TUNING.shrinkDuration });
     this.applyModifiers();
-    this.events.push({ type: 'boss', bossId: 'shrinker', effect: 'shrink', label: this.boss.label });
+    this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'shrink', label: this.boss.label });
+  }
+
+  /** Pin a specific encounter (ladder/story); null restores random-boss behaviour. */
+  setEncounter(encounter) {
+    this.encounter = encounter || null;
   }
 
   start() {
+    if (this.state === STATES.MENU || this.state === STATES.GAME_OVER) this.ladderStage = 0;
+    this.ladderCleared = false;
+    // Seed before anything gameplay-affecting draws, so dailies stay reproducible
+    this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
+    if (this.isLadderMode()) this.encounter = stageAt(this.ladderStage);
     const versus = this.isVersus();
     if (versus) {
       this.personality = null;
@@ -242,7 +292,7 @@ export class Game {
         this.aiPaddle = new PlayerPaddle(CONFIG.paddle.opponentZ);
       }
     } else {
-      this.personality = pickPersonality();
+      this.personality = pickPersonality(this.rng);
       if (this.aiPaddle instanceof AIPaddle) {
         this.aiPaddle.personality = this.personality;
       } else {
@@ -253,33 +303,46 @@ export class Game {
     this.pointStreak = 0;
     this._lastScorer = null;
     this._grazes = 0;
+    this._topSpeed = 0;
     this._shrinks = 0;
     this._minMargin = 0;
-    this.boss = this.settings.get('gameMode') === 'boss' ? pickBoss() : null;
+    if (this.encounter && this.aiPaddle instanceof AIPaddle) {
+      this.aiPaddle.setDifficulty(this.encounter.difficulty);
+    }
+    this.boss = this.encounter
+      ? bossFor(this.encounter)
+      : (this.settings.get('gameMode') === 'boss' ? pickBoss(this.rng) : null);
     this._bossTimer = 0;
-    this.rng = this.settings.get('dailyChallenge') ? mulberry32(dailySeed()) : Math.random;
+    this.winner = null;
     this.powerups.rng = this.rng;
     if (this.aiPaddle.rng) this.aiPaddle.rng = this.rng;
-    this.score.winScore = this.settings.get('winScore');
-    this.score.deuce = this.settings.get('deuce');
+    const suddenDeath = this.suddenDeathEnabled();
+    this.score.winScore = suddenDeath ? 1 : this.settings.get('winScore');
+    this.score.deuce = suddenDeath ? false : this.settings.get('deuce');
     this.score.reset();
     this.balls = [new Ball()];
+    const speedFactor = this.encounter ? this.encounter.speedFactor || 1 : 1;
+    if (speedFactor !== 1) this.ball.baseSpeed = CONFIG.ball.initialSpeed * speedFactor;
     this.rallyCombo = 0;
     this.maxRallyCombo = 0;
     this.lastHitter = null;
     this.timeScale = 1;
     this.activeEffects = [];
-    this.doublePoints = { player: 0, ai: 0 };
+    this.resetPointBoost();
     this.powerups.reset();
     this.stockedPowerup = null;
     this._pendingDraft = null;
     this._draftTimer = 0;
+    this.seedLoadout();
     this.serveDirection = this.rng() > 0.5 ? 1 : -1;
     this.state = STATES.SERVE;
     this.serveTimer = CONFIG.serve.delay;
     this.events.length = 0;
     if (this.boss) {
-      this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'intro', label: this.boss.label });
+      const label = this.isLadderMode()
+        ? `STAGE ${this.ladderStage + 1}/${LADDER.length} · ${this.boss.label}`
+        : this.boss.label;
+      this.events.push({ type: 'boss', bossId: this.boss.id, effect: 'intro', label });
     }
   }
 
@@ -297,11 +360,14 @@ export class Game {
 
   quitToMenu() {
     this.state = STATES.MENU;
+    // A pinned ladder/story encounter must not leak into the next match's mode
+    this.encounter = null;
+    this.winner = null;
     for (const ball of this.balls) ball.active = false;
     this.balls.length = 1;
     this.timeScale = 1;
     this.activeEffects = [];
-    this.doublePoints = { player: 0, ai: 0 };
+    this.resetPointBoost();
     this.powerups.reset();
     this.stockedPowerup = null;
     this._pendingDraft = null;
@@ -339,6 +405,9 @@ export class Game {
         if (!this.aiPaddle.frozen) this.aiPaddle.update(gdt, threat, this.rallyCombo, this.isBallHidden(threat));
         for (const ball of this.balls) ball.update(gdt);
         this.handleCollisions();
+        for (const ball of this.balls) {
+          if (ball.active && ball.speed > this._topSpeed) this._topSpeed = ball.speed;
+        }
 
         if (this.powerupsEnabled()) {
           this.powerups.update(gdt);
@@ -359,21 +428,38 @@ export class Game {
         if (this.scoreTimer <= 0) {
           const winner = this.score.checkWin();
           if (winner) {
+            // Ladder: a stage win advances to the next boss instead of ending the run
+            if (this.isLadderMode() && winner === 'player' && this.ladderStage + 1 < LADDER.length) {
+              this.ladderStage++;
+              this.start();
+              break;
+            }
             this.state = STATES.GAME_OVER;
             this.winner = winner;
-            if (this.records) this.records.noteResult(winner === 'player');
-            if (this.records && this.settings.get('dailyChallenge')) {
-              this.records.noteDaily(dailySeed(), {
-                won: winner === 'player',
-                margin: this.score.playerScore - this.score.opponentScore,
-                rally: this.maxRallyCombo,
-              });
+            if (this.achievementsEnabled()) {
+              this.records.noteResult(winner === 'player');
+              if (this.settings.get('dailyChallenge')) {
+                this.records.noteDaily(dailySeed(), {
+                  won: winner === 'player',
+                  margin: this.score.playerScore - this.score.opponentScore,
+                  rally: this.maxRallyCombo,
+                });
+              }
             }
-            if (winner === 'player' && this.achievementsEnabled()) {
-              this.tryUnlock('first_win');
-              if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
-              if (this._minMargin <= -5) this.tryUnlock('comeback');
+            if (this.loadoutEnabled()) {
+              const banked = Math.max(this.records.loadoutMult('double'), this._peakDoubleMult);
+              this.records.setLoadoutMult('double', banked);
             }
+            if (winner === 'player') {
+              if (this.isLadderMode()) this.ladderCleared = true;
+              if (this.achievementsEnabled()) {
+                this.tryUnlock('first_win');
+                if (this.score.opponentScore === 0) this.tryUnlock('perfect_game');
+                if (this._minMargin <= -5) this.tryUnlock('comeback');
+                if (this.isLadderMode()) this.tryUnlock('ladder_clear');
+              }
+            }
+            this.events.push({ type: 'gameOver', winner });
           } else {
             this.balls.length = 1;
             this.ball.reset(this.serveDirection, null, this.rng);
@@ -410,18 +496,10 @@ export class Game {
       // Player paddle bounce
       const playerHit = this.court.checkPaddleBounce(ball, this.playerPaddle, fun);
       if (playerHit) {
-        if (!fun) ball.increaseSpeed();
-        if (this.boss && this.boss.id === 'metronome') ball.increaseSpeed();
-        this.rallyCombo++;
-        this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
-        this.lastHitter = 'player';
-        this.applyPaddleShift('player', playerHit.offset);
-        this.recordRally();
-        this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
-        if (this.boss && this.boss.id === 'shrinker' && this.rallyCombo % BOSS_TUNING.shrinkerHits === 0) {
-          this.bossShrinkPlayer();
-        }
-        this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'player', offset: playerHit.offset, combo: this.rallyCombo });
+        const rules = bossRules(this.boss);
+        if (rules && rules.beforePlayerHit) rules.beforePlayerHit(this, ball);
+        this.registerPaddleHit('player', ball, playerHit.offset, fun);
+        if (rules && rules.afterPlayerHit) rules.afterPlayerHit(this);
         if (this.stockedPowerup) {
           const stocked = this.stockedPowerup;
           this.stockedPowerup = null;
@@ -434,15 +512,8 @@ export class Game {
       // AI paddle bounce
       const aiHit = this.court.checkPaddleBounce(ball, this.aiPaddle, fun);
       if (aiHit) {
-        if (!fun) ball.increaseSpeed();
+        this.registerPaddleHit('ai', ball, aiHit.offset, fun);
         if (this.settings.get('catchMode')) ball.applyCatchAssist(CONFIG.fun.catchSpeedFactor);
-        this.rallyCombo++;
-        this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
-        this.lastHitter = 'ai';
-        this.applyPaddleShift('ai', aiHit.offset);
-        this.recordRally();
-        this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
-        this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: 'ai', offset: aiHit.offset, combo: this.rallyCombo });
         this.maybeOfferDraft();
       }
 
@@ -460,33 +531,55 @@ export class Game {
       // Score
       const scorer = this.court.checkScore(ball);
       if (scorer) {
-        const side = scorer === 'opponent' ? 'ai' : scorer;
-        const points = this.doublePoints[side] > 0 ? 2 : 1;
-        if (this.doublePoints[side] > 0) {
-          this.doublePoints[side]--;
-          if (this.doublePoints[side] === 0) {
-            this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === side));
-          }
-        }
-        this.score.addPoint(side, points);
-        this._minMargin = Math.min(this._minMargin, this.score.playerScore - this.score.opponentScore);
-        this.state = STATES.SCORED;
-        this.hitStopTimer = CONFIG.hitStop.score;
-        this.scoreTimer = CONFIG.serve.scoreDelay;
-        this.serveDirection = side === 'player' ? 1 : -1;
-        if (this.tauntsEnabled()) {
-          this.emitTaunt(side === 'ai' ? this.personality.win : this.personality.lose);
-        }
-        this._tauntedImpressed = false;
-        this.pointStreak = side === this._lastScorer ? this.pointStreak + 1 : 1;
-        this._lastScorer = side;
-        if (side === 'player' && this.records && this.records.noteStreak(this.pointStreak)) {
-          this.events.push({ type: 'record', kind: 'streak', value: this.pointStreak });
-        }
-        this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
+        this.endRally(ball, scorer);
         break; // rally over
       }
     }
+  }
+
+  /** Shared bookkeeping for a paddle return on either side. */
+  registerPaddleHit(side, ball, offset, fun) {
+    if (!fun) ball.increaseSpeed();
+    this.rallyCombo++;
+    this.maxRallyCombo = Math.max(this.maxRallyCombo, this.rallyCombo);
+    this.lastHitter = side;
+    this.applyPaddleShift(side, offset);
+    this.recordRally();
+    this.hitStopTimer = CONFIG.hitStop.paddle + Math.min(this.rallyCombo * 0.001, CONFIG.hitStop.maxComboScale);
+    this.events.push({ type: 'paddleHit', x: ball.x, z: ball.z, who: side, offset, combo: this.rallyCombo });
+  }
+
+  /** A ball left the court: apply points, streaks, taunts and state change. */
+  endRally(ball, scorer) {
+    const side = scorer === 'opponent' ? 'ai' : scorer;
+    const boost = this.doublePoints[side];
+    const points = boost.goalsLeft > 0 ? boost.mult : 1;
+    if (boost.goalsLeft > 0) {
+      boost.goalsLeft--;
+      if (boost.goalsLeft === 0) {
+        boost.mult = 1;
+        this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === side));
+      } else {
+        const marker = this.activeEffects.find(e => e.type === 'double' && e.target === side);
+        if (marker) marker.goalsLeft = boost.goalsLeft;
+      }
+    }
+    this.score.addPoint(side, points);
+    this._minMargin = Math.min(this._minMargin, this.score.playerScore - this.score.opponentScore);
+    this.state = STATES.SCORED;
+    this.hitStopTimer = CONFIG.hitStop.score;
+    this.scoreTimer = CONFIG.serve.scoreDelay;
+    this.serveDirection = side === 'player' ? 1 : -1;
+    if (this.tauntsEnabled()) {
+      this.emitTaunt(side === 'ai' ? this.personality.win : this.personality.lose);
+    }
+    this._tauntedImpressed = false;
+    this.pointStreak = side === this._lastScorer ? this.pointStreak + 1 : 1;
+    this._lastScorer = side;
+    if (side === 'player' && this.achievementsEnabled() && this.records.noteStreak(this.pointStreak)) {
+      this.events.push({ type: 'record', kind: 'streak', value: this.pointStreak });
+    }
+    this.events.push({ type: 'score', who: side, x: ball.x, z: ball.z, combo: this.rallyCombo, points });
   }
 
   applyPowerup(type, target) {
@@ -496,8 +589,17 @@ export class Game {
     if (type === 'slowmo') {
       this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationSlowmo });
     } else if (type === 'double') {
-      this.doublePoints[target] = Math.max(this.doublePoints[target], cfg.doublePointsGoals);
-      this.activeEffects.push({ type, target, goalsLeft: cfg.doublePointsGoals });
+      // Stacks multiplicatively (x2 -> x4 -> x8); goals refresh, multiplier persists
+      const boost = this.doublePoints[target];
+      boost.mult = Math.min(boost.mult * 2, cfg.doubleMaxMult);
+      boost.goalsLeft = Math.max(boost.goalsLeft, cfg.doublePointsGoals);
+      if (target === 'player') {
+        this._peakDoubleMult = Math.max(this._peakDoubleMult, boost.mult);
+        if (boost.mult >= cfg.doubleMaxMult && this.achievementsEnabled()) this.tryUnlock('double_stack');
+      }
+      // One marker per side so the HUD reflects the current stack
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'double' && e.target === target));
+      this.activeEffects.push({ type, target, goalsLeft: boost.goalsLeft, mult: boost.mult });
     } else if (type === 'ghost') {
       this.activeEffects = this.activeEffects.filter(e => e.type !== 'ghost');
       this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationGhost });
@@ -519,8 +621,16 @@ export class Game {
       if (type === 'shrink') this.noteOpponentShrink(affected, scale);
     }
 
-    this.events.push({ type: 'powerup', puType: type, target });
+    const evt = { type: 'powerup', puType: type, target };
+    if (type === 'double') evt.mult = this.doublePoints[target].mult;
+    this.events.push(evt);
     this.applyModifiers();
+  }
+
+  /** Per-side point multiplier granted by `double` powerups. */
+  resetPointBoost() {
+    const empty = () => ({ mult: 1, goalsLeft: 0 });
+    this.doublePoints = { player: empty(), ai: empty() };
   }
 
   shiftsEnabled() {
@@ -566,7 +676,7 @@ export class Game {
     if (changed) {
       this.activeEffects = this.activeEffects.filter(e => e.timeLeft === undefined || e.timeLeft > 0);
       for (const e of this.activeEffects) {
-        if (e.type === 'double' && this.doublePoints[e.target] === 0) {
+        if (e.type === 'double' && this.doublePoints[e.target].goalsLeft === 0) {
           // goals exhausted, drop marker
           e.expired = true;
         }

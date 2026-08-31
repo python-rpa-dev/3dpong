@@ -38,6 +38,12 @@ export const CONFIG = {
     playerPaddle: 0x00e5ff,
     opponentPaddle: 0xff2d95,
     ball: 0xffff00,
+    wallHit: 0xffffff,
+    shiftShrink: 0xff2d95,
+    shiftGrow: 0x00ff88,
+    multiball: 0x00ff88,
+    netGrazed: 0xffffee,
+    lossFlash: 0xff0044,
   },
   ai: {
     easy: { reactionDelay: 0.3, maxSpeed: 9, error: 0.1 },
@@ -71,6 +77,8 @@ export const CONFIG = {
   },
 
   comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
+  // Okabe-Ito palette: distinguishable under common color-vision deficiencies.
+  comboColorsCB: [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0xcc79a7],
   paddleShifts: {
     edgeThreshold: 0.65,
     centerThreshold: 0.2,
@@ -93,6 +101,8 @@ export const CONFIG = {
     durationGhost: 4,
     durationFreeze: 1.2,
     doublePointsGoals: 2,
+    doubleMaxMult: 8,
+    loadoutGoals: 1,
     types: ['wide', 'shrink', 'slowmo', 'double', 'ghost', 'freeze'],
     colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00, ghost: 0x9d7bff, freeze: 0x88ddff },
   },
@@ -110,6 +120,5 @@ export const CONFIG = {
     netGrazeNudge: 0.15,
     catchSpeedFactor: 0.82,
     extraBallSpeedFactor: 0.85,
-    comboColors: [0x00e5ff, 0x00ff88, 0xffff00, 0xff8800, 0xff2d95],
   },
 };

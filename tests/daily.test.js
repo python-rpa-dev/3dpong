@@ -4,30 +4,9 @@ import { Game } from '../src/game/Game.js';
 import { PowerupManager } from '../src/game/Powerups.js';
 import { Records } from '../src/settings/Records.js';
 import { CONFIG } from '../src/config.js';
+import { FakeStorage, makeSettings as baseSettings } from './helpers.js';
 
-class FakeStorage {
-  constructor() { this.store = {}; }
-  getItem(k) { return this.store[k] ?? null; }
-  setItem(k, v) { this.store[k] = String(v); }
-}
-
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 11,
-    deuce: false,
-    gameMode: 'classic',
-    playerMode: 'ai',
-    powerups: true,
-    multiBall: false,
-    paddleShifts: false,
-    aiTaunts: false,
-    netGraze: false,
-    dailyChallenge: true,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
+const makeSettings = (overrides = {}) => baseSettings({ powerups: true, dailyChallenge: true, ...overrides });
 
 describe('Daily challenge seeding', () => {
   it('mulberry32 is deterministic per seed', () => {

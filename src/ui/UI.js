@@ -1,8 +1,11 @@
 import { CONFIG } from '../config.js';
 import { dailySeed } from '../game/rng.js';
 import { ACHIEVEMENTS } from '../settings/Records.js';
-import { remapSteerKey, applySwap } from '../input/steerKeys.js';
+import { remapSteerKey } from '../input/steerKeys.js';
+import { mirrorDir, flipIf } from '../input/steerTransform.js';
 import { POWERUP_INFO } from '../game/Powerups.js';
+
+export const MOUSE_SENS_LEVELS = [0.25, 0.5, 0.75, 1, 1.5];
 
 export class UI {
   constructor(game, settings) {
@@ -19,6 +22,7 @@ export class UI {
     this.comboCountEl = document.getElementById('combo-count');
     this.menuScreen = document.getElementById('menu-screen');
     this.pauseScreen = document.getElementById('pause-screen');
+    this.pauseStatsEl = document.getElementById('pause-stats');
     this.gameoverScreen = document.getElementById('gameover-screen');
     this.settingsScreen = document.getElementById('settings-screen');
     this.gameoverText = document.getElementById('gameover-text');
@@ -42,6 +46,19 @@ export class UI {
     document.getElementById('setting-music').checked = settings.get('music');
     document.getElementById('setting-gamepad').checked = settings.get('gamepad');
     document.getElementById('setting-daily').checked = settings.get('dailyChallenge');
+    document.getElementById('setting-cbtrail').checked = Boolean(settings.get('cbTrail'));
+    document.getElementById('setting-sound').checked = settings.get('soundOn') !== false;
+    this.shakeEl = document.getElementById('setting-shake');
+    this.shakeValEl = document.getElementById('setting-shake-val');
+    const shakePct = Math.round((settings.get('shakeIntensity') ?? 1) * 100);
+    this.shakeEl.value = String(shakePct);
+    this.shakeValEl.textContent = `${shakePct}%`;
+    this.shakeEl.addEventListener('input', () => {
+      this.shakeValEl.textContent = `${this.shakeEl.value}%`;
+    });
+    this.suddenDeathEl = document.getElementById('setting-suddendeath');
+    this.suddenDeathEl.checked = settings.get('suddenDeath');
+    this.updateSuddenDeathGate();
 
     // View angle controls (in-viewport)
     this.viewYawEl = document.getElementById('view-yaw');
@@ -55,6 +72,15 @@ export class UI {
       this.settings.set('steerAxis', next);
       this.settings.save();
       this.updateSteerButton();
+    });
+    this.mouseSensBtn = document.getElementById('btn-mouse-sens');
+    this.updateMouseSensButton();
+    this.mouseSensBtn.addEventListener('click', () => {
+      const cur = this.settings.get('mouseSensitivity') ?? 1;
+      const idx = (MOUSE_SENS_LEVELS.findIndex((l) => Math.abs(l - cur) < 1e-6) + 1) % MOUSE_SENS_LEVELS.length;
+      this.settings.set('mouseSensitivity', MOUSE_SENS_LEVELS[idx]);
+      this.settings.save();
+      this.updateMouseSensButton();
     });
     this.viewYawEl.value = String(settings.get('viewYaw'));
     this.viewTiltEl.value = String(Math.round(settings.get('viewTilt') * 100));
@@ -88,6 +114,7 @@ export class UI {
     document.getElementById('btn-play').addEventListener('click', () => this.startGame());
     document.getElementById('btn-settings').addEventListener('click', () => this.showSettings());
     document.getElementById('btn-resume').addEventListener('click', () => this.resumeGame());
+    document.getElementById('btn-restart').addEventListener('click', () => this.startGame());
     document.getElementById('btn-quit').addEventListener('click', () => this.quitToMenu());
     document.getElementById('btn-again').addEventListener('click', () => this.startGame());
     document.getElementById('btn-menu').addEventListener('click', () => this.quitToMenu());
@@ -111,8 +138,12 @@ export class UI {
     document.getElementById('setting-gamemode').addEventListener('change', () => this.updateFunSettingsVisibility());
 
     // Keyboard
+    this._heldKeys = new Map();
+    this.resetMouseAnchor();
     window.addEventListener('keydown', (e) => this.onKeyDown(e));
     window.addEventListener('keyup', (e) => this.onKeyUp(e));
+    // Losing focus swallows keyup events, which would strand a held direction.
+    window.addEventListener('blur', () => this.releaseAllSteerKeys());
 
     // Pointer (mouse always steers; touch/pen steers while the finger is down)
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
@@ -127,6 +158,8 @@ export class UI {
   }
 
   startGame() {
+    this.releaseAllSteerKeys();
+    this.resetMouseAnchor();
     this.showingSettings = false;
     this.game.start();
     this.hideAllScreens();
@@ -159,6 +192,7 @@ export class UI {
 
   showSettings() {
     this.showingSettings = true;
+    this.updateSuddenDeathGate();
     this.hideAllScreens();
     this.settingsScreen.classList.remove('hidden');
   }
@@ -188,6 +222,12 @@ export class UI {
     this.settings.set('music', document.getElementById('setting-music').checked);
     this.settings.set('gamepad', document.getElementById('setting-gamepad').checked);
     this.settings.set('dailyChallenge', document.getElementById('setting-daily').checked);
+    this.settings.set('cbTrail', document.getElementById('setting-cbtrail').checked);
+    this.settings.set('soundOn', document.getElementById('setting-sound').checked);
+    const shakePct = parseInt(document.getElementById('setting-shake').value, 10);
+    this.settings.set('shakeIntensity', Number.isFinite(shakePct) ? Math.max(0, shakePct / 100) : 1);
+    const suddenDeathUnlocked = !!this.records && this.records.has('double_stack');
+    this.settings.set('suddenDeath', suddenDeathUnlocked && this.suddenDeathEl.checked);
     this.settings.save();
 
     this.showMenu();
@@ -245,7 +285,7 @@ export class UI {
         this.opponentScoreEl.textContent = this.game.score.opponentScore;
 
         // Combo display (fun mode only)
-        if ((this.game.isFunMode() || this.game.isBossMode()) && this.game.rallyCombo > 1) {
+        if ((this.game.isFunMode() || this.game.isBossMode() || this.game.isLadderMode()) && this.game.rallyCombo > 1) {
           this.comboDisplay.classList.remove('hidden');
           this.comboCountEl.textContent = this.game.rallyCombo;
           // Color shifts with combo
@@ -268,6 +308,9 @@ export class UI {
         this.menuScreen.classList.remove('hidden');
       }
     } else if (state === 'PAUSED') {
+      const s = this.game.matchStats;
+      const speedX = (s.topSpeed / CONFIG.ball.initialSpeed).toFixed(1);
+      this.pauseStatsEl.textContent = `LONGEST RALLY ${s.longestRally} · TOP SPEED ${speedX}x · GRAZES ${s.grazes}`;
       this.hideAllScreens();
       this.pauseScreen.classList.remove('hidden');
     } else if (state === 'GAME_OVER') {
@@ -275,9 +318,14 @@ export class UI {
       this.scoreDisplay.classList.add('hidden');
       const versus = this.settings.get('playerMode') === 'versus';
       const playerWins = this.game.winner === 'player';
+      const ladder = this.game.isLadderMode();
       this.gameoverText.textContent = versus
         ? (playerWins ? 'PLAYER 1 WINS!' : 'PLAYER 2 WINS!')
-        : (playerWins ? 'YOU WIN!' : 'YOU LOSE!');
+        : playerWins
+          ? (ladder && this.game.ladderCleared ? 'LADDER CLEARED!' : 'YOU WIN!')
+          : ladder
+            ? `STAGE ${this.game.ladderStage + 1} — YOU LOSE!`
+            : 'YOU LOSE!';
       this.gameoverText.style.color = playerWins ? '#00e5ff' : '#ff2d95';
       this.finalScoreEl.textContent = this.game.score.display;
       this.gameoverScreen.classList.remove('hidden');
@@ -302,7 +350,7 @@ export class UI {
     }
   }
 
-  showPowerupToast(puType, target) {
+  showPowerupToast(puType, target, mult = 1) {
     const labels = {
       wide: 'PADDLE BOOST!',
       shrink: 'OPPONENT SHRUNK!',
@@ -320,6 +368,7 @@ export class UI {
         ? (puType === 'shrink' ? 'P2 PADDLE SHRUNK!' : 'P2 DOUBLE POINTS!')
         : (puType === 'shrink' ? 'YOUR PADDLE SHRANK!' : 'AI DOUBLE POINTS!');
     }
+    if (puType === 'double' && mult > 1) text += ` x${mult}`;
     this.powerupToastEl.textContent = text;
     this.powerupToastEl.style.color = colors[puType] || '#ffffff';
     // Restart the CSS animation
@@ -343,27 +392,51 @@ export class UI {
     this._tauntTimer = setTimeout(() => el.classList.add('hidden'), 2200);
   }
 
+  /** Which paddle a steering key controls (in versus the arrows drive P2, A/D drive P1). */
+  steerPaddle(key) {
+    const versus = this.settings.get('playerMode') === 'versus';
+    if (versus && (key === 'a' || key === 'A' || key === 'd' || key === 'D')) {
+      return this.game.playerPaddle;
+    }
+    return versus ? this.game.aiPaddle : this.game.playerPaddle;
+  }
+
+  /** Press a steering key; keyed by raw e.key so axis toggles can't strand keys. */
+  pressSteerKey(rawKey, key) {
+    const swapped = this.settings.get('sideSwap');
+    let dir = null;
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = mirrorDir('left', swapped);
+    else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = mirrorDir('right', swapped);
+    if (!dir) return;
+    const paddle = this.steerPaddle(key);
+    paddle.setKey(dir, true);
+    this._heldKeys.set(rawKey, { paddle, dir });
+  }
+
+  releaseSteerKey(rawKey) {
+    const held = this._heldKeys.get(rawKey);
+    if (!held) return;
+    held.paddle.setKey(held.dir, false);
+    this._heldKeys.delete(rawKey);
+  }
+
+  releaseAllSteerKeys() {
+    for (const { paddle, dir } of this._heldKeys.values()) paddle.setKey(dir, false);
+    this._heldKeys.clear();
+  }
+
   onKeyDown(e) {
     const vertical = this.settings.get('steerAxis') === 'vertical';
-    const swapped = this.settings.get('sideSwap');
     const key = remapSteerKey(e.key, vertical);
-    const versus = this.settings.get('playerMode') === 'versus';
-    const leftPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
-    const rightPaddle = versus ? this.game.aiPaddle : this.game.playerPaddle;
+    this.pressSteerKey(e.key, key);
 
-    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey(applySwap('left', swapped), true);
-      } else {
-        leftPaddle.setKey(applySwap('left', swapped), true);
-      }
-    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey(applySwap('right', swapped), true);
-      } else {
-        rightPaddle.setKey(applySwap('right', swapped), true);
-      }
-    } else if (key === ' ' || key === 'p' || key === 'P') {
+    // Master sound hotkey: M mutes/unmutes (also flips the settings checkbox on next open)
+    if (e.key === 'm' || e.key === 'M') {
+      this.settings.set('soundOn', !this.settings.get('soundOn'));
+      this.settings.save();
+    }
+
+    if (key === ' ' || key === 'p' || key === 'P') {
       e.preventDefault();
       if (this.game.state === 'PLAYING') {
         this.game.pause();
@@ -389,23 +462,7 @@ export class UI {
   }
 
   onKeyUp(e) {
-    const vertical = this.settings.get('steerAxis') === 'vertical';
-    const swapped = this.settings.get('sideSwap');
-    const key = remapSteerKey(e.key, vertical);
-    const versus = this.settings.get('playerMode') === 'versus';
-    if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-      if (versus && (key === 'a' || key === 'A')) {
-        this.game.playerPaddle.setKey(applySwap('left', swapped), false);
-      } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('left', swapped), false);
-      }
-    } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-      if (versus && (key === 'd' || key === 'D')) {
-        this.game.playerPaddle.setKey(applySwap('right', swapped), false);
-      } else {
-        (versus ? this.game.aiPaddle : this.game.playerPaddle).setKey(applySwap('right', swapped), false);
-      }
-    }
+    this.releaseSteerKey(e.key);
   }
 
   setScreenToWorld(fn) {
@@ -415,6 +472,15 @@ export class UI {
   setRecords(records) {
     this.records = records;
     this.updateMenuRecords();
+    this.updateSuddenDeathGate();
+  }
+
+  /** Sudden death is unlockable, so the option stays disabled until it is earned. */
+  updateSuddenDeathGate() {
+    if (!this.suddenDeathEl) return;
+    const unlocked = !!this.records && this.records.has('double_stack');
+    this.suddenDeathEl.disabled = !unlocked;
+    this.suddenDeathEl.title = unlocked ? '' : 'Locked — stack double points to x8 in one match';
   }
 
   updateMenuRecords() {
@@ -424,7 +490,8 @@ export class UI {
     if (r.bestRally === 0 && r.wins === 0 && r.losses === 0) {
       el.classList.add('hidden');
     } else {
-      el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}`;
+      const carry = this.records.loadoutMult('double');
+      el.textContent = `BEST RALLY ${r.bestRally} · BEST STREAK ${r.bestStreak} · W ${r.wins} - L ${r.losses}${carry > 1 ? ` · DOUBLE x${carry}` : ''}`;
       el.classList.remove('hidden');
     }
     const dayEl = document.getElementById('menu-daily');
@@ -464,6 +531,12 @@ export class UI {
     const vertical = this.settings.get('steerAxis') === 'vertical';
     this.steerAxisBtn.setAttribute('aria-pressed', String(vertical));
     this.steerAxisBtn.innerHTML = vertical ? '&#8645; STEER &#8597;' : '&#8596; STEER';
+  }
+
+  updateMouseSensButton() {
+    const sens = this.settings.get('mouseSensitivity') ?? 1;
+    this.mouseSensBtn.innerHTML = `&#128433; ${Math.round(sens * 100)}%`;
+    this.mouseSensBtn.setAttribute('aria-label', `Mouse sensitivity ${Math.round(sens * 100)} percent`);
   }
 
   updateSwapButton() {
@@ -516,21 +589,58 @@ export class UI {
     }, 1600);
   }
 
+  /** Mouse steering integrates cursor deltas so the sensitivity level actually scales travel. */
+  resetMouseAnchor() {
+    this._mouseTarget = null;
+    this._lastMouseWx = null;
+  }
+
   onPointerMove(e) {
-    if (e.pointerType !== 'mouse' && e.pointerId !== this._touchPointerId) return;
-    if (this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED') {
-      if (!this._screenToWorld) return;
-      let worldX;
+    const steering = this.game.state === 'PLAYING' || this.game.state === 'SERVE' || this.game.state === 'SCORED';
+    if (e.pointerType === 'mouse') {
+      if (!steering || !this._screenToWorld) { this.resetMouseAnchor(); return; }
+      const half = CONFIG.court.width / 2;
+      let wx;
       if (this.settings.get('steerAxis') === 'vertical') {
-        const half = CONFIG.court.width / 2;
-        worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+        wx = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+        // A side-swapped view mirrors the screen, so mirror the mapping too (like keys/gamepad)
+        wx = flipIf(wx, this.settings.get('sideSwap'));
       } else {
-        worldX = this._screenToWorld(e.clientX, e.clientY);
+        // Fixed scanline: the unprojected x depends on screen y too, which would make
+        // vertical cursor motion drift the paddle sideways. Only clientX should steer here.
+        wx = this._screenToWorld(e.clientX, window.innerHeight / 2);
       }
-      this.game.playerPaddle.setWorldTarget(worldX);
+      if (this._mouseTarget === null) {
+        // Re-arm at the paddle's current spot so entering play never teleports it.
+        this._mouseTarget = this.game.playerPaddle.x;
+        this._lastMouseWx = wx;
+        this.game.playerPaddle.setWorldTarget(this._mouseTarget);
+        if (this.game.state === 'SERVE') this.game.setServeAimWorld(this._mouseTarget);
+        return;
+      }
+      const sens = this.settings.get('mouseSensitivity') ?? 1;
+      this._mouseTarget = Math.max(-half, Math.min(half, this._mouseTarget + (wx - this._lastMouseWx) * sens));
+      this._lastMouseWx = wx;
+      this.game.playerPaddle.setWorldTarget(this._mouseTarget);
       if (this.game.state === 'SERVE') {
-        this.game.setServeAimWorld(worldX);
+        this.game.setServeAimWorld(this._mouseTarget);
       }
+      return;
+    }
+    // Touch/pen: absolute drag while the finger is down — sensitivity would feel wrong there.
+    if (e.pointerId !== this._touchPointerId || !steering || !this._screenToWorld) return;
+    let worldX;
+    if (this.settings.get('steerAxis') === 'vertical') {
+      const half = CONFIG.court.width / 2;
+      worldX = ((e.clientY / window.innerHeight) * 2 - 1) * half;
+      worldX = flipIf(worldX, this.settings.get('sideSwap'));
+    } else {
+      // Same fixed-scanline rule as the mouse path above.
+      worldX = this._screenToWorld(e.clientX, window.innerHeight / 2);
+    }
+    this.game.playerPaddle.setWorldTarget(worldX);
+    if (this.game.state === 'SERVE') {
+      this.game.setServeAimWorld(worldX);
     }
   }
 }

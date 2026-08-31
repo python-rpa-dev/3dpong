@@ -1,29 +1,9 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { Game } from '../src/game/Game.js';
 import { CONFIG } from '../src/config.js';
+import { makeSettings as baseSettings, toPlaying } from './helpers.js';
 
-function makeSettings(overrides = {}) {
-  const data = {
-    difficulty: 'easy',
-    winScore: 11,
-    deuce: false,
-    gameMode: 'fun',
-    playerMode: 'ai',
-    powerups: false,
-    multiBall: false,
-    paddleShifts: false,
-    aiTaunts: false,
-    netGraze: true,
-    ...overrides,
-  };
-  return { get: (k) => data[k], set: (k, v) => { data[k] = v; }, save() {} };
-}
-
-function toPlaying(game) {
-  let t = 0;
-  while (game.state !== 'PLAYING' && t < 5) { game.update(1 / 60); t += 1 / 60; }
-  game.drainEvents();
-}
+const makeSettings = (overrides = {}) => baseSettings({ gameMode: 'fun', netGraze: true, ...overrides });
 
 describe('Net graze', () => {
   const originalChance = CONFIG.fun.netGrazeChance;

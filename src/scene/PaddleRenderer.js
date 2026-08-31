@@ -78,10 +78,10 @@ export class PaddleRenderer {
       this.aiMesh.material.emissiveIntensity = 0.4 + this.aiFlash * 0.8;
     }
     this.playerMesh.material.emissive.set(
-      playerPaddle.frozen ? 0x88ddff : CONFIG.colors.playerPaddle
+      playerPaddle.frozen ? CONFIG.powerups.colors.freeze : CONFIG.colors.playerPaddle
     );
     this.aiMesh.material.emissive.set(
-      aiPaddle.frozen ? 0x88ddff : CONFIG.colors.opponentPaddle
+      aiPaddle.frozen ? CONFIG.powerups.colors.freeze : CONFIG.colors.opponentPaddle
     );
   }
 }
