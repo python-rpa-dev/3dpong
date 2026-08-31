@@ -51,6 +51,7 @@ export class Game {
     this.pointStreak = 0;
     this._lastScorer = null;
     this._grazes = 0;
+    this._topSpeed = 0;
     this._shrinks = 0;
     this._minMargin = 0;
     this.boss = null;
@@ -74,6 +75,11 @@ export class Game {
 
   isLadderMode() {
     return this.settings.get('gameMode') === 'ladder';
+  }
+
+  /** Current-match readout for the pause menu. */
+  get matchStats() {
+    return { longestRally: this.maxRallyCombo, topSpeed: this._topSpeed, grazes: this._grazes };
   }
 
   isVersus() {
@@ -297,6 +303,7 @@ export class Game {
     this.pointStreak = 0;
     this._lastScorer = null;
     this._grazes = 0;
+    this._topSpeed = 0;
     this._shrinks = 0;
     this._minMargin = 0;
     if (this.encounter && this.aiPaddle instanceof AIPaddle) {
@@ -398,6 +405,9 @@ export class Game {
         if (!this.aiPaddle.frozen) this.aiPaddle.update(gdt, threat, this.rallyCombo, this.isBallHidden(threat));
         for (const ball of this.balls) ball.update(gdt);
         this.handleCollisions();
+        for (const ball of this.balls) {
+          if (ball.active && ball.speed > this._topSpeed) this._topSpeed = ball.speed;
+        }
 
         if (this.powerupsEnabled()) {
           this.powerups.update(gdt);

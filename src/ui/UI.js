@@ -19,6 +19,7 @@ export class UI {
     this.comboCountEl = document.getElementById('combo-count');
     this.menuScreen = document.getElementById('menu-screen');
     this.pauseScreen = document.getElementById('pause-screen');
+    this.pauseStatsEl = document.getElementById('pause-stats');
     this.gameoverScreen = document.getElementById('gameover-screen');
     this.settingsScreen = document.getElementById('settings-screen');
     this.gameoverText = document.getElementById('gameover-text');
@@ -91,6 +92,7 @@ export class UI {
     document.getElementById('btn-play').addEventListener('click', () => this.startGame());
     document.getElementById('btn-settings').addEventListener('click', () => this.showSettings());
     document.getElementById('btn-resume').addEventListener('click', () => this.resumeGame());
+    document.getElementById('btn-restart').addEventListener('click', () => this.startGame());
     document.getElementById('btn-quit').addEventListener('click', () => this.quitToMenu());
     document.getElementById('btn-again').addEventListener('click', () => this.startGame());
     document.getElementById('btn-menu').addEventListener('click', () => this.quitToMenu());
@@ -278,6 +280,9 @@ export class UI {
         this.menuScreen.classList.remove('hidden');
       }
     } else if (state === 'PAUSED') {
+      const s = this.game.matchStats;
+      const speedX = (s.topSpeed / CONFIG.ball.initialSpeed).toFixed(1);
+      this.pauseStatsEl.textContent = `LONGEST RALLY ${s.longestRally} · TOP SPEED ${speedX}x · GRAZES ${s.grazes}`;
       this.hideAllScreens();
       this.pauseScreen.classList.remove('hidden');
     } else if (state === 'GAME_OVER') {
