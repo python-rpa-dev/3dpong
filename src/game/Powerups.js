@@ -8,6 +8,7 @@ export const POWERUP_INFO = {
   ghost: { label: 'GHOST BALL', desc: 'Ball fades on their side 4s' },
   freeze: { label: 'FREEZE', desc: 'Locks opponent paddle 1.2s' },
   shield: { label: 'SHIELD', desc: 'Blocks the next goal against you' },
+  echo: { label: 'ECHO PADDLE', desc: 'Ghost paddle guards your far half 6s' },
 };
 
 

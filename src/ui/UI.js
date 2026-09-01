@@ -431,9 +431,10 @@ export class UI {
       ghost: 'GHOST BALL!',
       freeze: 'OPPONENT FROZEN!',
       shield: 'SHIELD UP!',
+      echo: 'ECHO PADDLE!',
       multi: 'MULTI-BALL!',
     };
-    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', shield: '#ffb347', multi: '#00ff88' };
+    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', shield: '#ffb347', echo: '#18e0ce', multi: '#00ff88' };
     let text = labels[puType] || 'POWER-UP!';
     const versus = this.settings.get('playerMode') === 'versus';
     if ((puType === 'shrink' || puType === 'double') && target === 'ai') {
@@ -443,6 +444,9 @@ export class UI {
     }
     if (puType === 'shield' && target === 'ai') {
       text = versus ? 'P2 SHIELD UP!' : 'AI HAS A SHIELD!';
+    }
+    if (puType === 'echo' && target === 'ai') {
+      text = versus ? 'P2 ECHO PADDLE!' : 'AI HAS AN ECHO PADDLE!';
     }
     if (textOverride) text = textOverride;
     if (puType === 'double' && mult > 1) text += ` x${mult}`;

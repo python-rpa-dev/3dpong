@@ -101,6 +101,7 @@ function gameLoop(time) {
     courtRenderer.update(game.rallyCombo, dt);
     paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
     powerupRenderer.update(game.powerups.active, dt);
+    powerupRenderer.setEchoes(game.echoPaddles());
     aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);
     effects.update(dt);
 

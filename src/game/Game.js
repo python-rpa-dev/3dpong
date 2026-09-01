@@ -529,6 +529,9 @@ export class Game {
         this.emitTaunt(this.personality.impressed);
       }
 
+      // Echo paddle: blocks one shot entering its guarded half of the goal line
+      if (this.checkEchoBlock(ball)) continue;
+
       // Score
       const scorer = this.court.checkScore(ball);
       if (scorer) {
@@ -560,6 +563,35 @@ export class Game {
     ball.prevZ = ball.z;
     ball.active = true; // checkScore deactivated it on the way out
     this.events.push({ type: 'shieldSave', who: side, x: ball.x, z: ball.z });
+  }
+
+  /** True if an echo paddle intercepts this ball; consumes the charge. */
+  checkEchoBlock(ball) {
+    const half = this.court.halfDepth;
+    for (let i = this.activeEffects.length - 1; i >= 0; i--) {
+      const e = this.activeEffects[i];
+      if (e.type !== 'echo') continue;
+      const towardOwnLine = e.target === 'player' ? ball.vz < 0 : ball.vz > 0;
+      if (!towardOwnLine) continue;
+      const echoZ = (e.target === 'player' ? -1 : 1) * (half - 0.8);
+      if (Math.abs(ball.z - echoZ) > ball.radius + 0.35) continue;
+      if (ball.x * e.side < 0) continue; // outside the guarded half
+      this.activeEffects.splice(i, 1);
+      ball.vz = e.target === 'player' ? Math.abs(ball.vz) : -Math.abs(ball.vz);
+      ball.z += ball.vz * 0.02; // nudge clear of the band so it cannot double-block
+      ball.prevZ = ball.z;
+      this.events.push({ type: 'echoBlock', who: e.target, x: ball.x, z: ball.z });
+      return true;
+    }
+    return false;
+  }
+
+  /** Echo zones for the renderer: which half of each goal line is guarded. */
+  echoPaddles() {
+    const hw = CONFIG.court.width / 2;
+    return this.activeEffects
+      .filter(e => e.type === 'echo')
+      .map(e => ({ side: e.target, x: (e.side * hw) / 2, halfWidth: hw / 2 }));
   }
 
   /** Shared bookkeeping for a paddle return on either side. */
@@ -637,6 +669,11 @@ export class Game {
       // One charge per side; persists until it saves a goal. Re-collecting refreshes.
       this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shield' && e.target === target));
       this.activeEffects.push({ type, target });
+    } else if (type === 'echo') {
+      // Ghost paddle guards the goal-line half the collector is NOT covering
+      const paddle = target === 'player' ? this.playerPaddle : this.aiPaddle;
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'echo' && e.target === target));
+      this.activeEffects.push({ type, target, side: paddle.x > 0 ? -1 : 1, timeLeft: cfg.durationEcho });
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;

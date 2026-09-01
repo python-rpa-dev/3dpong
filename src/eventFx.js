@@ -64,6 +64,15 @@ export function createEventFx({ game, audio, effects, ui, camera, ballRenderer, 
       ui.showPowerupToast('shield', evt.who, 1, 'GOAL SAVED!');
     },
 
+    echoBlock(evt) {
+      audio.playPowerup('echo');
+      const color = CONFIG.powerups.colors.echo;
+      effects.spawnParticles(evt.x, 1, evt.z, color, 20, 4);
+      effects.triggerShake(2, 0.18);
+      ballRenderer.triggerSquash('z');
+      ui.showPowerupToast('echo', evt.who, 1, 'ECHO BLOCK!');
+    },
+
     record(evt) {
       ui.showRecord(evt.kind, evt.value);
     },
