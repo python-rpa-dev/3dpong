@@ -9,6 +9,7 @@ export const POWERUP_INFO = {
   freeze: { label: 'FREEZE', desc: 'Locks opponent paddle 1.2s' },
   shield: { label: 'SHIELD', desc: 'Blocks the next goal against you' },
   echo: { label: 'ECHO PADDLE', desc: 'Ghost paddle guards your far half 6s' },
+  turbo: { label: 'TURBO', desc: '+40% ball speed until next goal' },
 };
 
 

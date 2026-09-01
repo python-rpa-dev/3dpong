@@ -214,6 +214,7 @@ export class Audio {
       freeze: [1400, 300],
       shield: [280, 840],
       echo: [620, 480, 720],
+      turbo: [330, 520, 780],
     };
     const notes = freqs[puType] || [440];
     notes.forEach((freq, i) => {

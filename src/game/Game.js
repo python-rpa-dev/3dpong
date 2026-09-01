@@ -674,6 +674,20 @@ export class Game {
       const paddle = target === 'player' ? this.playerPaddle : this.aiPaddle;
       this.activeEffects = this.activeEffects.filter(e => !(e.type === 'echo' && e.target === target));
       this.activeEffects.push({ type, target, side: paddle.x > 0 ? -1 : 1, timeLeft: cfg.durationEcho });
+    } else if (type === 'turbo') {
+      // Glass cannon: kick every live ball's speed multiplier; serve reset clears it
+      for (const b of this.balls) {
+        if (!b.active) continue;
+        b.speedMultiplier = Math.min(b.speedMultiplier * cfg.turboFactor, CONFIG.fun.maxSpeedMultiplier);
+        const boosted = b.baseSpeed * b.speedMultiplier;
+        const cur = Math.hypot(b.vx, b.vz);
+        if (cur > 0) {
+          const s = boosted / cur;
+          b.vx *= s;
+          b.vz *= s;
+        }
+        b.speed = boosted;
+      }
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;
