@@ -85,7 +85,7 @@ Implement one at a time on `dev`, commit each separately.
 1. ✅ **Shield** — one-time goal save: next incoming goal is blocked at the line, shield pops. Counterweight to freeze/shrink being punishing.
 2. ✅ **Echo paddle** — a ghost paddle hovers on your goal line for ~6s and blocks one shot; covers only part of the line, so positioning still matters.
 3. ✅ **Turbo** — ball +40% speed until *you* score or concede. Stacks with combo scoring; glass-cannon play.
-4. **Big ball** — 2x ball size for ~6s: easier for you to return, less reaction time for the opponent. Symmetric and readable.
+4. ✅ **Big ball** — 2x ball size for ~6s: easier for you to return, less reaction time for the opponent. Symmetric and readable.
 5. **Vortex tile** — a glowing tile drifts on the court; ball deflects off it once. Shares the tile language with hazard zones (round 3 #2) — build them on one tile system.
 6. **Magnet** — ball curves slightly toward your paddle face when approaching within ~1 unit; strong late returns, weaker angle shots.
 7. **Drain** — steals remaining duration of the opponent's active timed powerup and applies it to you. Drafts make this visible-knowledge mind games.

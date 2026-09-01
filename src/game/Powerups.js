@@ -10,6 +10,7 @@ export const POWERUP_INFO = {
   shield: { label: 'SHIELD', desc: 'Blocks the next goal against you' },
   echo: { label: 'ECHO PADDLE', desc: 'Ghost paddle guards your far half 6s' },
   turbo: { label: 'TURBO', desc: '+40% ball speed until next goal' },
+  bigball: { label: 'BIG BALL', desc: 'Ball size x2 for 6s' },
 };
 
 

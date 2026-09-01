@@ -164,13 +164,15 @@ export class BallRenderer {
       }
       const [ebx, ebz] = ipos(ball);
       const st = this._motionStretch(ball, dt);
+      const rs = ball.radius / CONFIG.ball.radius; // bigball grows the mesh too
       view.mesh.visible = true;
       view.mesh.rotation.y = st.rotY;
-      view.mesh.scale.set(st.x, 1, st.z);
+      view.mesh.scale.set(st.x * rs, rs, st.z * rs);
       view.mesh.position.set(ebx, ball.radius, ebz);
       view.light.position.set(ebx, ball.radius + 0.5, ebz);
       view.light.intensity = 1;
       view.shadow.visible = true;
+      view.shadow.scale.set(rs, rs, 1);
       view.shadow.position.set(ebx, 0.02, ebz);
       view.shadow.material.opacity = shadowOpacity;
     }
@@ -185,15 +187,16 @@ export class BallRenderer {
     // velocity smear stretches along travel so fast motion reads continuous.
     // Squash factors are projected into the (possibly rotated) stretch frame.
     const st = this._motionStretch(ball, dt);
+    const rs = ball.radius / CONFIG.ball.radius; // bigball grows the mesh too
     const flat = 1 - s * 0.4;
     const bulge = 1 + s * 0.25;
     const sp = ball.currentSpeed || 0;
     const a = sp > 1e-6 ? Math.abs((axisZ ? ball.vz : ball.vx) / sp) : 0;
     this.mesh.rotation.y = st.rotY;
     this.mesh.scale.set(
-      (flat * a + bulge * (1 - a)) * st.x,
-      bulge,
-      (bulge * a + flat * (1 - a)) * st.z
+      (flat * a + bulge * (1 - a)) * st.x * rs,
+      bulge * rs,
+      (bulge * a + flat * (1 - a)) * st.z * rs
     );
 
     if (!ball.active) {
@@ -211,7 +214,7 @@ export class BallRenderer {
     this.shadow.visible = true;
     this.shadow.material.opacity = shadowOpacity;
     this.shadow.position.set(bx, 0.02, bz);
-    const shadowScale = 1 + s * 0.35;
+    const shadowScale = (1 + s * 0.35) * rs;
     this.shadow.scale.set(shadowScale, shadowScale, 1);
 
     // Color shifts with speed: yellow → orange → red → white

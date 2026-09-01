@@ -130,6 +130,7 @@ export class Game {
     const dir = awayFrom === 'player' ? 1 : -1;
     const extra = new Ball();
     extra.reset(dir, null, this.rng);
+    extra.radius = CONFIG.ball.radius * (this.ballRadiusScale || 1);
     const f = CONFIG.fun.extraBallSpeedFactor;
     extra.vx *= f;
     extra.vz *= f;
@@ -688,6 +689,10 @@ export class Game {
         }
         b.speed = boosted;
       }
+    } else if (type === 'bigball') {
+      // Symmetric swing: fatter ball is easier to return but reaches you sooner
+      this.activeEffects = this.activeEffects.filter(e => e.type !== 'bigball');
+      this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationBigBall });
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;
@@ -773,8 +778,10 @@ export class Game {
     let aiMult = 1;
     let playerFrozen = false;
     let aiFrozen = false;
+    let bigScale = 1;
     for (const e of this.activeEffects) {
       if (e.type === 'slowmo') { slowmo = true; continue; }
+      if (e.type === 'bigball') { bigScale = cfg.bigBallScale; continue; }
       if (e.type === 'freeze') {
         if (e.target === 'player') playerFrozen = true;
         else if (e.target === 'ai') aiFrozen = true;
@@ -792,6 +799,8 @@ export class Game {
     this.playerPaddle.frozen = playerFrozen;
     this.aiPaddle.frozen = aiFrozen;
     this.timeScale = slowmo ? cfg.slowmoScale : 1;
+    this.ballRadiusScale = bigScale;
+    for (const b of this.balls) b.radius = CONFIG.ball.radius * bigScale;
   }
 
   /** True while a ghost powerup hides balls heading toward the AI on its half. */

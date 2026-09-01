@@ -215,6 +215,7 @@ export class Audio {
       shield: [280, 840],
       echo: [620, 480, 720],
       turbo: [330, 520, 780],
+      bigball: [200, 320],
     };
     const notes = freqs[puType] || [440];
     notes.forEach((freq, i) => {

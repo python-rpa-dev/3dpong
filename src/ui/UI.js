@@ -433,9 +433,10 @@ export class UI {
       shield: 'SHIELD UP!',
       echo: 'ECHO PADDLE!',
       turbo: 'TURBO!',
+      bigball: 'BIG BALL!',
       multi: 'MULTI-BALL!',
     };
-    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', shield: '#ffb347', echo: '#18e0ce', turbo: '#ff3b30', multi: '#00ff88' };
+    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', shield: '#ffb347', echo: '#18e0ce', turbo: '#ff3b30', bigball: '#f5f5ff', multi: '#00ff88' };
     let text = labels[puType] || 'POWER-UP!';
     const versus = this.settings.get('playerMode') === 'versus';
     if ((puType === 'shrink' || puType === 'double') && target === 'ai') {
