@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js';
+import { CONFIG, resolveCourtSkin } from './config.js';
 import { Scene } from './scene/Scene.js';
 import { Camera } from './scene/Camera.js';
 import { CourtRenderer } from './scene/CourtRenderer.js';
@@ -44,17 +44,23 @@ ui.setScreenToWorld((clientX, clientY) =>
 );
 
 ui.onViewControls((v) => {
-  camera.setView(effectiveYaw(v.yaw, v.swapped), v.tilt);
+  camera.setView(effectiveYaw(v.yaw, v.swapped), v.tilt, v.yaw);
   camera.setZoom(v.zoom);
 });
 
 const gamepadInput = new GamepadInput(game);
+// Debug handle for automated testing (opt-in via ?debug)
+if (new URLSearchParams(location.search).has('debug')) {
+  window.__pong = { game, ui, camera, settings, ballRenderer };
+}
 const handleGameEvents = createEventFx({
   game, audio, effects, ui, camera, ballRenderer, paddleRenderer,
 });
 
 let lastTime = performance.now();
 let loopErrors = 0;
+const PHYS_STEP = 1 / 120;
+let accumulator = 0;
 
 function gameLoop(time) {
   const dt = Math.min((time - lastTime) / 1000, 0.05);
@@ -68,8 +74,17 @@ function gameLoop(time) {
     if (audio.enabled !== soundOn) audio.enabled = soundOn;
     const trailPalette = settings.get('cbTrail') ? CONFIG.comboColorsCB : CONFIG.comboColors;
     if (ballRenderer.trailPalette !== trailPalette) ballRenderer.setTrailPalette(trailPalette);
+    const skin = resolveCourtSkin(settings.get('courtSkin'), (id) => records.has(id));
+    if (courtRenderer.skin !== skin) courtRenderer.setSkin(skin);
     if (settings.get('gamepad')) gamepadInput.update(dt);
-    game.update(dt);
+    // Fixed-timestep physics with render interpolation: decouples simulation
+    // from display refresh rate and removes bounce overshoot jitter.
+    accumulator += dt;
+    while (accumulator >= PHYS_STEP) {
+      game.update(PHYS_STEP);
+      accumulator -= PHYS_STEP;
+    }
+    const alpha = game.state === 'PLAYING' ? accumulator / PHYS_STEP : 1;
     handleGameEvents(game.drainEvents());
 
     // Rally music follows game state + combo intensity
@@ -82,10 +97,11 @@ function gameLoop(time) {
 
     // Update renderers
     ballRenderer.setGhost(game.isBallHidden(game.threatBall()));
-    ballRenderer.update(game.balls, dt, game.rallyCombo);
+    ballRenderer.update(game.balls, dt, game.rallyCombo, alpha);
     courtRenderer.update(game.rallyCombo, dt);
     paddleRenderer.update(game.playerPaddle, game.aiPaddle, dt);
     powerupRenderer.update(game.powerups.active, dt);
+    powerupRenderer.setEchoes(game.echoPaddles());
     aimIndicator.update(game.state === 'SERVE', game.currentServeAim(), game.serveDirection, dt);
     effects.update(dt);
 

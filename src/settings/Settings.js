@@ -27,6 +27,7 @@ export const DEFAULTS = {
   shakeIntensity: 1,
   cbTrail: false,
   soundOn: true,
+  courtSkin: 'default',
 };
 
 export class Settings {

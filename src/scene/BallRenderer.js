@@ -1,12 +1,18 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 
+const _stretch = { rotY: 0, x: 1, z: 1 };
+
 export class BallRenderer {
   constructor(scene) {
     this.trailLength = 10;
     this.trailPositions = [];
     this.lastTrailPos = null;
     this.trailPalette = CONFIG.comboColors;
+    // Scratch colors reused per frame to keep the render loop allocation-free
+    this._color = new THREE.Color();
+    this._comboColor = new THREE.Color();
+    this._trailColor = new THREE.Color();
 
     // Ball mesh
     const geo = new THREE.SphereGeometry(CONFIG.ball.radius, 32, 32);
@@ -103,9 +109,44 @@ export class BallRenderer {
     if (Array.isArray(palette) && palette.length > 0) this.trailPalette = palette;
   }
 
-  update(balls, dt = 1 / 60, combo = 0) {
+  /**
+   * Pseudo motion blur: elongate the ball along its travel direction by about
+   * one frame of movement. World-space stretch means the screen-space streak
+   * scales with perspective automatically — longer near the camera or zoomed,
+   * negligible far away — which is exactly where fast depth-wise motion would
+   * otherwise strobe between frames.
+   */
+  _motionStretch(ball, dt) {
+    const sp = ball.currentSpeed || 0;
+    if (sp < 1e-6 || !ball.vx && !ball.vz) {
+      _stretch.rotY = 0; _stretch.x = 1; _stretch.z = 1;
+      return _stretch;
+    }
+    const ratio = Math.min(sp / CONFIG.ball.maxSpeed, 1);
+    // Cubic ramp: near-round at normal speeds, streak only when really fast
+    const stretch = Math.min(ratio * ratio * ratio * CONFIG.ball.smearGain, CONFIG.ball.smearMax);
+    if (stretch < 0.05) {
+      _stretch.rotY = 0; _stretch.x = 1; _stretch.z = 1;
+      return _stretch;
+    }
+    // Local +X after a Y-rotation of atan2(-uz, ux) points along the velocity
+    _stretch.rotY = Math.atan2(-ball.vz / sp, ball.vx / sp);
+    _stretch.x = 1 + stretch;
+    _stretch.z = 1;
+    return _stretch;
+  }
+
+  update(balls, dt = 1 / 60, combo = 0, alpha = 1) {
     if (!Array.isArray(balls)) balls = [balls];
     const primary = balls[0];
+    // Render between the last two fixed physics steps for sub-step smoothness
+    const ipos = (b) => (alpha >= 1 || b.prevX === undefined || b.prevZ === undefined)
+      ? [b.x, b.z]
+      : [b.prevX + (b.x - b.prevX) * alpha, b.prevZ + (b.z - b.prevZ) * alpha];
+    // Ghost fade must be known before anything (incl. ground shadows) is drawn
+    this.ghostFade = (this.ghostFade || 0) + ((this.ghostHidden ? 1 : 0) - (this.ghostFade || 0)) * Math.min(1, dt * 8);
+    const ghostMul = 1 - this.ghostFade * 0.85;
+    const shadowOpacity = 0.35 * (1 - this.ghostFade * 0.95);
 
     // Decay squash & stretch
     this.squash = Math.max(0, this.squash - dt * 6);
@@ -121,26 +162,41 @@ export class BallRenderer {
         view.shadow.visible = false;
         continue;
       }
+      const [ebx, ebz] = ipos(ball);
+      const st = this._motionStretch(ball, dt);
+      const rs = ball.radius / CONFIG.ball.radius; // bigball grows the mesh too
       view.mesh.visible = true;
-      view.mesh.position.set(ball.x, ball.radius, ball.z);
-      view.light.position.set(ball.x, ball.radius + 0.5, ball.z);
+      view.mesh.rotation.y = st.rotY;
+      view.mesh.scale.set(st.x * rs, rs, st.z * rs);
+      view.mesh.position.set(ebx, ball.radius, ebz);
+      view.light.position.set(ebx, ball.radius + 0.5, ebz);
       view.light.intensity = 1;
       view.shadow.visible = true;
-      view.shadow.position.set(ball.x, 0.02, ball.z);
+      view.shadow.scale.set(rs, rs, 1);
+      view.shadow.position.set(ebx, 0.02, ebz);
+      view.shadow.material.opacity = shadowOpacity;
     }
 
     const ball = primary;
     const y = ball.radius;
-    this.mesh.position.set(ball.x, y, ball.z);
-    this.light.position.set(ball.x, y + 0.5, ball.z);
+    const [bx, bz] = ipos(ball);
+    this.mesh.position.set(bx, y, bz);
+    this.light.position.set(bx, y + 0.5, bz);
 
-    // Squash on impact: flatten along collision normal, bulge perpendicular
+    // Squash on impact: flatten along collision normal, bulge perpendicular;
+    // velocity smear stretches along travel so fast motion reads continuous.
+    // Squash factors are projected into the (possibly rotated) stretch frame.
+    const st = this._motionStretch(ball, dt);
+    const rs = ball.radius / CONFIG.ball.radius; // bigball grows the mesh too
     const flat = 1 - s * 0.4;
     const bulge = 1 + s * 0.25;
+    const sp = ball.currentSpeed || 0;
+    const a = sp > 1e-6 ? Math.abs((axisZ ? ball.vz : ball.vx) / sp) : 0;
+    this.mesh.rotation.y = st.rotY;
     this.mesh.scale.set(
-      axisZ ? bulge : flat,
-      bulge,
-      axisZ ? flat : bulge
+      (flat * a + bulge * (1 - a)) * st.x * rs,
+      bulge * rs,
+      (bulge * a + flat * (1 - a)) * st.z * rs
     );
 
     if (!ball.active) {
@@ -154,10 +210,11 @@ export class BallRenderer {
 
     this.mesh.visible = true;
 
-    // Ground shadow tracks the ball, swells slightly during squash
+    // Ground shadow tracks the ball, swells slightly during squash; fades with ghost
     this.shadow.visible = true;
-    this.shadow.position.set(ball.x, 0.02, ball.z);
-    const shadowScale = 1 + s * 0.35;
+    this.shadow.material.opacity = shadowOpacity;
+    this.shadow.position.set(bx, 0.02, bz);
+    const shadowScale = (1 + s * 0.35) * rs;
     this.shadow.scale.set(shadowScale, shadowScale, 1);
 
     // Color shifts with speed: yellow → orange → red → white
@@ -165,7 +222,7 @@ export class BallRenderer {
     const r = 1;
     const g = 1 - speedRatio * 0.6;
     const b = 1 - speedRatio * 0.9;
-    const color = new THREE.Color(r, g, b);
+    const color = this._color.setRGB(r, g, b);
     this.mesh.material.color.copy(color);
     this.mesh.material.emissive.copy(color);
     this.mesh.material.emissiveIntensity = 0.3 + speedRatio * 0.7;
@@ -173,12 +230,10 @@ export class BallRenderer {
     this.light.intensity = 0.8 + speedRatio * 1.2;
 
     // Trail intensity scales with speed; hue walks the combo palette
-    this.ghostFade = (this.ghostFade || 0) + ((this.ghostHidden ? 1 : 0) - (this.ghostFade || 0)) * Math.min(1, dt * 8);
-    const ghostMul = 1 - this.ghostFade * 0.85;
     const palette = this.trailPalette;
-    const comboColor = new THREE.Color(palette[Math.min(Math.floor(combo / 3), palette.length - 1)]);
+    const comboColor = this._comboColor.set(palette[Math.min(Math.floor(combo / 3), palette.length - 1)]);
     const trailMix = Math.min(combo / 12, 0.75);
-    const trailColor = color.clone().lerp(comboColor, trailMix);
+    const trailColor = this._trailColor.copy(color).lerp(comboColor, trailMix);
     const trailOpacity = (0.15 + speedRatio * 0.35 + Math.min(combo * 0.01, 0.15)) * ghostMul;
     for (let i = 0; i < this.trailLength; i++) {
       this.trailMeshes[i].material.color.copy(trailColor);
@@ -187,14 +242,16 @@ export class BallRenderer {
     this.mesh.material.opacity = Math.max(0.12, ghostMul);
     this.light.intensity *= ghostMul;
 
-    // Update trail (distance-based)
+    // Update trail (distance-based; threshold tracks per-frame travel so the
+    // tail advances continuously instead of popping at a fixed spacing)
+    const sampleDist = Math.max(0.15, (ball.currentSpeed || 0) * dt);
     const dist = this.lastTrailPos
-      ? Math.hypot(ball.x - this.lastTrailPos.x, ball.z - this.lastTrailPos.z)
+      ? Math.hypot(bx - this.lastTrailPos.x, bz - this.lastTrailPos.z)
       : 1;
 
-    if (dist > 0.3) {
-      this.trailPositions.unshift({ x: ball.x, z: ball.z });
-      this.lastTrailPos = { x: ball.x, z: ball.z };
+    if (dist > sampleDist) {
+      this.trailPositions.unshift({ x: bx, z: bz });
+      this.lastTrailPos = { x: bx, z: bz };
       if (this.trailPositions.length > this.trailLength) {
         this.trailPositions.pop();
       }

@@ -130,6 +130,7 @@ export class Game {
     const dir = awayFrom === 'player' ? 1 : -1;
     const extra = new Ball();
     extra.reset(dir, null, this.rng);
+    extra.radius = CONFIG.ball.radius * (this.ballRadiusScale || 1);
     const f = CONFIG.fun.extraBallSpeedFactor;
     extra.vx *= f;
     extra.vz *= f;
@@ -379,6 +380,7 @@ export class Game {
     // Hit-stop: brief simulation freeze so impacts register (visuals keep animating)
     if (this.hitStopTimer > 0 && (this.state === STATES.PLAYING || this.state === STATES.SCORED)) {
       this.hitStopTimer -= dt;
+      for (const b of this.balls) { b.prevX = b.x; b.prevZ = b.z; }
       return;
     }
 
@@ -528,13 +530,69 @@ export class Game {
         this.emitTaunt(this.personality.impressed);
       }
 
+      // Echo paddle: blocks one shot entering its guarded half of the goal line
+      if (this.checkEchoBlock(ball)) continue;
+
       // Score
       const scorer = this.court.checkScore(ball);
       if (scorer) {
+        const scoredSide = scorer === 'opponent' ? 'ai' : scorer;
+        const conceder = scoredSide === 'player' ? 'ai' : 'player';
+        const shieldIdx = this.activeEffects.findIndex(e => e.type === 'shield' && e.target === conceder);
+        if (shieldIdx >= 0) {
+          this.activeEffects.splice(shieldIdx, 1);
+          this.shieldSave(ball, conceder);
+          continue; // shield pops, rally continues
+        }
         this.endRally(ball, scorer);
         break; // rally over
       }
     }
+  }
+
+  /** Shield pop: reflect the scoring ball at the goal line instead of awarding. */
+  shieldSave(ball, side) {
+    const half = this.court.halfDepth;
+    const margin = ball.radius * 2; // matches checkScore's out-of-bounds threshold
+    if (side === 'ai') {
+      ball.z = half - margin;
+      ball.vz = -Math.abs(ball.vz);
+    } else {
+      ball.z = -half + margin;
+      ball.vz = Math.abs(ball.vz);
+    }
+    ball.prevZ = ball.z;
+    ball.active = true; // checkScore deactivated it on the way out
+    this.events.push({ type: 'shieldSave', who: side, x: ball.x, z: ball.z });
+  }
+
+  /** True if an echo paddle intercepts this ball; consumes the charge. */
+  checkEchoBlock(ball) {
+    const half = this.court.halfDepth;
+    for (let i = this.activeEffects.length - 1; i >= 0; i--) {
+      const e = this.activeEffects[i];
+      if (e.type !== 'echo') continue;
+      const towardOwnLine = e.target === 'player' ? ball.vz < 0 : ball.vz > 0;
+      if (!towardOwnLine) continue;
+      const echoZ = (e.target === 'player' ? -1 : 1) * (half - 0.8);
+      if (Math.abs(ball.z - echoZ) > ball.radius + 0.35) continue;
+      if (ball.x * e.side < 0) continue; // outside the guarded half
+      this.activeEffects.splice(i, 1);
+      ball.vz = e.target === 'player' ? Math.abs(ball.vz) : -Math.abs(ball.vz);
+      ball.z += ball.vz * 0.02; // nudge clear of the band so it cannot double-block
+      ball.prevZ = ball.z;
+      this.events.push({ type: 'echoBlock', who: e.target, x: ball.x, z: ball.z });
+      return true;
+    }
+    return false;
+  }
+
+  /** Echo zones for the renderer: which half of each goal line is guarded. */
+  echoPaddles() {
+    const hw = CONFIG.court.width / 2;
+    return this.activeEffects
+      .filter(e => e.type === 'echo')
+      .map(e => ({ side: e.target, x: (e.side * hw) / 2, halfWidth: hw / 2 }));
   }
 
   /** Shared bookkeeping for a paddle return on either side. */
@@ -608,6 +666,33 @@ export class Game {
       const affected = opponent;
       this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === affected));
       this.activeEffects.push({ type, target: affected, timeLeft: cfg.durationFreeze });
+    } else if (type === 'shield') {
+      // One charge per side; persists until it saves a goal. Re-collecting refreshes.
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shield' && e.target === target));
+      this.activeEffects.push({ type, target });
+    } else if (type === 'echo') {
+      // Ghost paddle guards the goal-line half the collector is NOT covering
+      const paddle = target === 'player' ? this.playerPaddle : this.aiPaddle;
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'echo' && e.target === target));
+      this.activeEffects.push({ type, target, side: paddle.x > 0 ? -1 : 1, timeLeft: cfg.durationEcho });
+    } else if (type === 'turbo') {
+      // Glass cannon: kick every live ball's speed multiplier; serve reset clears it
+      for (const b of this.balls) {
+        if (!b.active) continue;
+        b.speedMultiplier = Math.min(b.speedMultiplier * cfg.turboFactor, CONFIG.fun.maxSpeedMultiplier);
+        const boosted = b.baseSpeed * b.speedMultiplier;
+        const cur = Math.hypot(b.vx, b.vz);
+        if (cur > 0) {
+          const s = boosted / cur;
+          b.vx *= s;
+          b.vz *= s;
+        }
+        b.speed = boosted;
+      }
+    } else if (type === 'bigball') {
+      // Symmetric swing: fatter ball is easier to return but reaches you sooner
+      this.activeEffects = this.activeEffects.filter(e => e.type !== 'bigball');
+      this.activeEffects.push({ type, target: 'global', timeLeft: cfg.durationBigBall });
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;
@@ -693,8 +778,10 @@ export class Game {
     let aiMult = 1;
     let playerFrozen = false;
     let aiFrozen = false;
+    let bigScale = 1;
     for (const e of this.activeEffects) {
       if (e.type === 'slowmo') { slowmo = true; continue; }
+      if (e.type === 'bigball') { bigScale = cfg.bigBallScale; continue; }
       if (e.type === 'freeze') {
         if (e.target === 'player') playerFrozen = true;
         else if (e.target === 'ai') aiFrozen = true;
@@ -712,6 +799,8 @@ export class Game {
     this.playerPaddle.frozen = playerFrozen;
     this.aiPaddle.frozen = aiFrozen;
     this.timeScale = slowmo ? cfg.slowmoScale : 1;
+    this.ballRadiusScale = bigScale;
+    for (const b of this.balls) b.radius = CONFIG.ball.radius * bigScale;
   }
 
   /** True while a ghost powerup hides balls heading toward the AI on its half. */

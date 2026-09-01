@@ -72,8 +72,9 @@
 1. **All development happens on `dev`.**
 2. **Commit to `dev`** after every working change that passes tests.
 3. **`main` is reserved** for milestone releases. Merge `dev` → `main` only when a spec-defined milestone is complete.
-4. **Never commit directly to `main`** during active development.
-5. **Commit messages**: Conventional Commits format.
+4. **Never merge `dev` → `main` without explicit user confirmation in the current session.** A completed milestone is not sufficient on its own; propose it and wait for approval.
+5. **Never commit directly to `main`** during active development.
+6. **Commit messages**: Conventional Commits format.
    ```
    feat: add ball physics with wall bounce
    fix: correct paddle angle calculation at edges
@@ -82,14 +83,12 @@
    test: add unit tests for collision detection
    ```
 
-### Credentials
+### Post-commit Hook (agent todo sync)
 
-```
-user.name:  python-rpa-dev
-user.email: 108140019+python-rpa-dev@users.noreply.github.com
-```
-
-These are set as **local** repo config (not global).
+`githooks/post-commit` is enabled via `git config core.hooksPath githooks` (run once per clone).
+It rebuilds `dist/` and prints a line starting with `AGENT-REMINDER` to stderr after every commit.
+**If you see an `AGENT-REMINDER` in commit output, immediately update your todo list**: mark the
+committed task completed and queue follow-ups. Also tick the matching item in `IDEAS.md`.
 
 ---
 
@@ -239,7 +238,7 @@ npx vitest
 
 ## Critical Reminders for All Agents
 
-1. **Windows 11 / PowerShell** — No bash syntax. See table above.
+1. Development and testing environment is Linux and bash.
 2. **2D logic, 3D rendering** — Never add vertical ball physics.
 3. **Spec is authoritative** — `pong3d-spec.md` defines all behavior. If in doubt, check the spec.
 4. **Commit to `dev`** — Never to `main` unless a milestone is complete.

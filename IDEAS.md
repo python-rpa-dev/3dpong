@@ -36,7 +36,7 @@ Implement one at a time on `dev`, commit each separately.
 
 4. ✅ **Touch controls** — drag-to-move paddle so the game works on phones/tablets.
 5. ✅ **Boss Rush ladder** — beat all three bosses in sequence with escalating difficulty instead of one random boss.
-6. **Unlockable court skins** — palette variants tied to achievements.
+6. ✅ **Unlockable court skins** — palette variants tied to achievements.
 ✅ 7. **View angle sliders (viewport)** — horizontal/vertical sliders that orbit/pan the camera around the court (yaw + tilt), default = current pose, soft-animated transitions; keyboard aiming must stay correct at any angle.
 ✅ 8. **Side swap toggle** — button to trade places with the opponent (view from the far end); same pose system as #7 with a 180° yaw offset; default = current view.
 
@@ -66,7 +66,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Feel & juice
 
-10. **Ball shadow/ground indicator** — readability win at extreme camera tilts.
+10. ✅ **Ball shadow/ground indicator** — readability win at extreme camera tilts. (Shipped; ghost powerup no longer leaks the hidden ball via its ground shadow.)
 11. **Slow-mo on match point** — brief time dilation + audio duck on game/match-point serves.
 12. ✅ **Hit-stop freeze** — ~30 ms freeze frame on big combo hits.
 13. **Ambient stadium reactions** — procedural crowd murmur swelling with rally length (Web Audio, no assets).
@@ -82,17 +82,17 @@ Implement one at a time on `dev`, commit each separately.
 
 ### New powerups
 
-1. **Shield** — one-time goal save: next incoming goal is blocked at the line, shield pops. Counterweight to freeze/shrink being punishing.
-2. **Echo paddle** — a ghost paddle hovers on your goal line for ~6s and blocks one shot; covers only part of the line, so positioning still matters.
-3. **Turbo** — ball +40% speed until *you* score or concede. Stacks with combo scoring; glass-cannon play.
-4. **Big ball** — 2x ball size for ~6s: easier for you to return, less reaction time for the opponent. Symmetric and readable.
+1. ✅ **Shield** — one-time goal save: next incoming goal is blocked at the line, shield pops. Counterweight to freeze/shrink being punishing.
+2. ✅ **Echo paddle** — a ghost paddle hovers on your goal line for ~6s and blocks one shot; covers only part of the line, so positioning still matters.
+3. ✅ **Turbo** — ball +40% speed until *you* score or concede. Stacks with combo scoring; glass-cannon play.
+4. ✅ **Big ball** — 2x ball size for ~6s: easier for you to return, less reaction time for the opponent. Symmetric and readable.
 5. **Vortex tile** — a glowing tile drifts on the court; ball deflects off it once. Shares the tile language with hazard zones (round 3 #2) — build them on one tile system.
 6. **Magnet** — ball curves slightly toward your paddle face when approaching within ~1 unit; strong late returns, weaker angle shots.
 7. **Drain** — steals remaining duration of the opponent's active timed powerup and applies it to you. Drafts make this visible-knowledge mind games.
 
 ### Systems
 
-8. **Cumulative powerups** — collected powerups persist and stack across rallies/matches instead of expiring. *Double points* is the perfect candidate (x2 -> x4 -> x8 stacking). Award a trophy for collecting them; use collection milestones to unlock other mechanics, e.g. **sudden death** mode (next point wins) as an achievement-gated unlock.
+8. ✅ **Cumulative powerups** — collected powerups persist and stack across rallies/matches instead of expiring. *Double points* is the perfect candidate (x2 -> x4 -> x8 stacking). Award a trophy for collecting them; use collection milestones to unlock other mechanics, e.g. **sudden death** mode (next point wins) as an achievement-gated unlock.
 
 ---
 
@@ -104,6 +104,6 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Replay system (round 2 #9, not yet built)
 - Seeded replay only reproduces while the **simulation code is byte-identical** — any physics/AI/powerup/timestep change desyncs old replays. Mitigations: stamp replays with a sim version/build hash and refuse mismatches, or record periodic state snapshots + inputs instead of pure re-simulation.
-- Requires a **fixed timestep** for the sim; current loop uses variable rAF `dt`.
+- ~~Requires a **fixed timestep**~~ — resolved: the game loop now runs fixed 1/120 physics steps with render interpolation (`35b1ad3`); replays must still stamp the sim/build version.
 
 

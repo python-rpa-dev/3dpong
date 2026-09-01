@@ -71,6 +71,7 @@ export class CourtRenderer {
       side: THREE.DoubleSide,
     });
     const net = new THREE.Mesh(netGeo, netMat);
+    this.netMat = netMat;
     net.position.set(0, netHeight / 2, 0);
     this.group.add(net);
 
@@ -80,6 +81,7 @@ export class CourtRenderer {
       transparent: true,
       opacity: 0.15,
     });
+    this.lineMat = lineMat;
     const lineCount = 20;
     for (let i = 0; i <= lineCount; i++) {
       const x = -hw + (i / lineCount) * width;
@@ -104,6 +106,8 @@ export class CourtRenderer {
     this.group.add(topBar);
     this.barMat = barMat;
     this.heat = 0;
+    this.heatColor = new THREE.Color(0x8a1f4a);
+    this.skin = null;
   }
 
   /**
@@ -124,12 +128,30 @@ export class CourtRenderer {
     // Heat color: deep magenta-orange glow
     this.floorMat.emissive.setRGB(0.45 * h, 0.08 * h, 0.25 * h);
     this.floorMat.emissiveIntensity = 0.6;
-    this.wallMat.color.copy(this.baseWallColor).lerp(new THREE.Color(0x8a1f4a), h * 0.7);
+    this.wallMat.color.copy(this.baseWallColor).lerp(this.heatColor, h * 0.7);
     this.edgeMat.opacity = 0.6 + h * 0.4;
     this.barMat.opacity = 0.3 + h * 0.5;
   }
 
-  createFloorTexture() {
+  /** Apply a court skin (palette variant); null-ish input resets to the default look. */
+  setSkin(skin) {
+    const c = (skin && skin.colors) || {};
+    this.skin = skin || null;
+    this.baseWallColor.set(c.wall ?? CONFIG.colors.wall);
+    this.wallMat.color.copy(this.baseWallColor);
+    const netColor = new THREE.Color(c.net ?? CONFIG.colors.net);
+    this.netMat.color.copy(netColor);
+    this.lineMat.color.copy(netColor);
+    this.barMat.color.copy(netColor);
+    this.edgeMat.color.set(c.edge ?? CONFIG.colors.playerPaddle);
+    this.heatColor.set(c.heat ?? 0x8a1f4a);
+    const texture = this.createFloorTexture(c.floorTop ?? '#1a1a3e', c.floorBottom ?? '#2d1b4e');
+    if (this.floorMat.map) this.floorMat.map.dispose();
+    this.floorMat.map = texture;
+    this.floorMat.needsUpdate = true;
+  }
+
+  createFloorTexture(top = '#1a1a3e', bottom = '#2d1b4e') {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 768;
@@ -137,8 +159,8 @@ export class CourtRenderer {
 
     // Gradient background
     const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, '#1a1a3e');
-    grad.addColorStop(1, '#2d1b4e');
+    grad.addColorStop(0, top);
+    grad.addColorStop(1, bottom);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
