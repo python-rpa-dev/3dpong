@@ -212,6 +212,7 @@ export class Audio {
       double: [523, 523, 784],
       ghost: [880, 660, 494],
       freeze: [1400, 300],
+      shield: [280, 840],
     };
     const notes = freqs[puType] || [440];
     notes.forEach((freq, i) => {

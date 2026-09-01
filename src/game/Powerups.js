@@ -7,6 +7,7 @@ export const POWERUP_INFO = {
   double: { label: 'DOUBLE POINTS', desc: 'Next 2 goals count double' },
   ghost: { label: 'GHOST BALL', desc: 'Ball fades on their side 4s' },
   freeze: { label: 'FREEZE', desc: 'Locks opponent paddle 1.2s' },
+  shield: { label: 'SHIELD', desc: 'Blocks the next goal against you' },
 };
 
 

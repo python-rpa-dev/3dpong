@@ -107,8 +107,8 @@ export const CONFIG = {
     doublePointsGoals: 2,
     doubleMaxMult: 8,
     loadoutGoals: 1,
-    types: ['wide', 'shrink', 'slowmo', 'double', 'ghost', 'freeze'],
-    colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00, ghost: 0x9d7bff, freeze: 0x88ddff },
+    types: ['wide', 'shrink', 'slowmo', 'double', 'ghost', 'freeze', 'shield'],
+    colors: { wide: 0x00ff88, shrink: 0xff2d95, slowmo: 0x66aaff, double: 0xffff00, ghost: 0x9d7bff, freeze: 0x88ddff, shield: 0xffb347 },
   },
   drafts: {
     every: 5,

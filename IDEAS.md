@@ -92,7 +92,7 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Systems
 
-8. **Cumulative powerups** — collected powerups persist and stack across rallies/matches instead of expiring. *Double points* is the perfect candidate (x2 -> x4 -> x8 stacking). Award a trophy for collecting them; use collection milestones to unlock other mechanics, e.g. **sudden death** mode (next point wins) as an achievement-gated unlock.
+8. ✅ **Cumulative powerups** — collected powerups persist and stack across rallies/matches instead of expiring. *Double points* is the perfect candidate (x2 -> x4 -> x8 stacking). Award a trophy for collecting them; use collection milestones to unlock other mechanics, e.g. **sudden death** mode (next point wins) as an achievement-gated unlock.
 
 ---
 
@@ -104,6 +104,6 @@ Implement one at a time on `dev`, commit each separately.
 
 ### Replay system (round 2 #9, not yet built)
 - Seeded replay only reproduces while the **simulation code is byte-identical** — any physics/AI/powerup/timestep change desyncs old replays. Mitigations: stamp replays with a sim version/build hash and refuse mismatches, or record periodic state snapshots + inputs instead of pure re-simulation.
-- Requires a **fixed timestep** for the sim; current loop uses variable rAF `dt`.
+- ~~Requires a **fixed timestep**~~ — resolved: the game loop now runs fixed 1/120 physics steps with render interpolation (`35b1ad3`); replays must still stamp the sim/build version.
 
 

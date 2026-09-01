@@ -532,10 +532,34 @@ export class Game {
       // Score
       const scorer = this.court.checkScore(ball);
       if (scorer) {
+        const scoredSide = scorer === 'opponent' ? 'ai' : scorer;
+        const conceder = scoredSide === 'player' ? 'ai' : 'player';
+        const shieldIdx = this.activeEffects.findIndex(e => e.type === 'shield' && e.target === conceder);
+        if (shieldIdx >= 0) {
+          this.activeEffects.splice(shieldIdx, 1);
+          this.shieldSave(ball, conceder);
+          continue; // shield pops, rally continues
+        }
         this.endRally(ball, scorer);
         break; // rally over
       }
     }
+  }
+
+  /** Shield pop: reflect the scoring ball at the goal line instead of awarding. */
+  shieldSave(ball, side) {
+    const half = this.court.halfDepth;
+    const margin = ball.radius * 2; // matches checkScore's out-of-bounds threshold
+    if (side === 'ai') {
+      ball.z = half - margin;
+      ball.vz = -Math.abs(ball.vz);
+    } else {
+      ball.z = -half + margin;
+      ball.vz = Math.abs(ball.vz);
+    }
+    ball.prevZ = ball.z;
+    ball.active = true; // checkScore deactivated it on the way out
+    this.events.push({ type: 'shieldSave', who: side, x: ball.x, z: ball.z });
   }
 
   /** Shared bookkeeping for a paddle return on either side. */
@@ -609,6 +633,10 @@ export class Game {
       const affected = opponent;
       this.activeEffects = this.activeEffects.filter(e => !(e.type === 'freeze' && e.target === affected));
       this.activeEffects.push({ type, target: affected, timeLeft: cfg.durationFreeze });
+    } else if (type === 'shield') {
+      // One charge per side; persists until it saves a goal. Re-collecting refreshes.
+      this.activeEffects = this.activeEffects.filter(e => !(e.type === 'shield' && e.target === target));
+      this.activeEffects.push({ type, target });
     } else {
       // wide benefits the collector; shrink hits the opponent
       const affected = type === 'wide' ? target : opponent;

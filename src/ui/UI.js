@@ -422,7 +422,7 @@ export class UI {
     }
   }
 
-  showPowerupToast(puType, target, mult = 1) {
+  showPowerupToast(puType, target, mult = 1, textOverride = null) {
     const labels = {
       wide: 'PADDLE BOOST!',
       shrink: 'OPPONENT SHRUNK!',
@@ -430,9 +430,10 @@ export class UI {
       double: 'DOUBLE POINTS!',
       ghost: 'GHOST BALL!',
       freeze: 'OPPONENT FROZEN!',
+      shield: 'SHIELD UP!',
       multi: 'MULTI-BALL!',
     };
-    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', multi: '#00ff88' };
+    const colors = { wide: '#00ff88', shrink: '#ff2d95', slowmo: '#66aaff', double: '#ffff00', ghost: '#9d7bff', freeze: '#88ddff', shield: '#ffb347', multi: '#00ff88' };
     let text = labels[puType] || 'POWER-UP!';
     const versus = this.settings.get('playerMode') === 'versus';
     if ((puType === 'shrink' || puType === 'double') && target === 'ai') {
@@ -440,6 +441,10 @@ export class UI {
         ? (puType === 'shrink' ? 'P2 PADDLE SHRUNK!' : 'P2 DOUBLE POINTS!')
         : (puType === 'shrink' ? 'YOUR PADDLE SHRANK!' : 'AI DOUBLE POINTS!');
     }
+    if (puType === 'shield' && target === 'ai') {
+      text = versus ? 'P2 SHIELD UP!' : 'AI HAS A SHIELD!';
+    }
+    if (textOverride) text = textOverride;
     if (puType === 'double' && mult > 1) text += ` x${mult}`;
     this.powerupToastEl.textContent = text;
     this.powerupToastEl.style.color = colors[puType] || '#ffffff';
